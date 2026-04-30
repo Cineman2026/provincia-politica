@@ -2113,12 +2113,12 @@ La interna recién empieza.`,
 
 function loadNoticias() {
   try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    // Si no hay noticias guardadas, usamos las semilla
-    if (!stored || stored.length === 0) {
-      return SEED_NOTICIAS;
-    }
-    return stored;
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    // Combinar noticias del admin con las semilla
+    // Las del admin van primero, las semilla al final si no están duplicadas
+    const storedIds = stored.map(n => n.id);
+    const seedExtras = SEED_NOTICIAS.filter(n => !storedIds.includes(n.id));
+    return [...stored, ...seedExtras];
   } catch (e) {
     return SEED_NOTICIAS;
   }
