@@ -308,11 +308,11 @@
     .video-hero {
       position: relative;
       width: 100%;
-      height: 30vh;
-      min-height: 260px;
+      height: 65vh;
+      min-height: 400px;
       overflow: hidden;
       background: #000;
-      border-bottom: 1px solid var(--line);
+      border-bottom: none;
       z-index: 1;
     }
 
@@ -350,7 +350,7 @@
       height: 100%;
       max-width: 1360px;
       margin: 0 auto;
-      padding: 0 1.5rem 2.5rem;
+      padding: 0 1.5rem 14rem;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -419,10 +419,10 @@
     /* Lead Grid superpuesto sobre el hero */
     .lead-grid {
       display: grid;
-      grid-template-columns: 1.5fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 1.5rem;
       margin-bottom: 3rem;
-      margin-top: -80px;
+      margin-top: -220px;
       position: relative;
       z-index: 5;
     }
@@ -430,11 +430,12 @@
     /* Tarjetas con fondo para legibilidad sobre el video */
     .lead-big,
     .lead-med {
-      background: var(--bg-card);
+      background: rgba(10, 10, 8, 0.92);
       border: 1px solid var(--line-strong);
       border-radius: 2px;
       padding: 0;
       overflow: hidden;
+      backdrop-filter: blur(8px);
     }
 
     .lead-big > div:last-child,
@@ -2008,106 +2009,130 @@ function escHtml(str) {
 const SEED_NOTICIAS = [
   {
     id: 'n001',
-    titulo: '24,6 billones. La cifra que define el conflicto Provincia-Nación',
-    copete: 'Bianco dijo que el programa económico de Milei "es insostenible". No fue una declaración aislada. Es el marco político con el que el oficialismo bonaerense empieza a posicionarse para 2027.',
-    cuerpo: `"El programa económico de Milei es insostenible." La frase la dijo Carlos Bianco el lunes en la conferencia de prensa habitual. No es una declaración aislada. Es el marco político con el que el oficialismo bonaerense empieza a posicionarse para 2027.
+    titulo: 'CGT marcha hoy a Plaza de Mayo: el Conurbano se mueve desde el mediodia',
+    copete: 'La central obrera convoca desde las 15hs. Las columnas bonaerenses salen desde el mediodia. La consigna: trabajo digno, salario justo y sin ajuste. El PJ bonaerense acompana.',
+    cuerpo: `La CGT marcha hoy a Plaza de Mayo. El acto central es a las 15hs pero desde el mediodia las columnas empiezan a llegar desde el Conurbano bonaerense y distintos puntos de la Ciudad.
 
-El número que duele
+La consigna oficial es "trae tu bandera argentina". El reclamo se centra en tres ejes: la caida del poder adquisitivo, la reforma laboral aprobada en febrero y el impacto del ajuste sobre la produccion y el empleo.
 
-24,6 billones de pesos. Esa es la cifra que el ministro de Gobierno bonaerense atribuye al desfinanciamiento que la Nación le generó a la Provincia desde diciembre de 2023. El monto incluye deudas directas, saldos de obras públicas abandonadas, programas nacionales discontinuados, y la caída de recursos coparticipables.
+El Conurbano en la calle
 
-De ese total, 16,7 billones corresponden a deudas concretas que la Provincia reclama ante la Corte Suprema. El gobierno bonaerense ya presentó ocho demandas judiciales para reclamarlas.
+Camioneros concentra en Av. 9 de Julio y Belgrano. La UOCRA desde su sede en Belgrano 1870. UPCN desde Diagonal Sur y Alsina. La UTEP desde Bernardo de Yrigoyen y Av. de Mayo. Mas de 100 organizaciones sindicales, sociales y politicas confirmaron adhesion.
 
-Bianco lo resumió en una sola frase: "Eso es lo que Milei le ha robado a la Provincia de Buenos Aires".
+El PJ bonaerense marcha junto a la CGT. Kicillof encabeza la columna como presidente del partido. Magario y los intendentes del Conurbano acompanan.
 
-Los datos que sostienen el discurso
+El homenaje a Francisco
 
-La actividad económica cayó 2,6% en febrero, con la industria manufacturera y el comercio como los rubros más golpeados. El consumo de lácteos retrocedió 8% en febrero. La carne vacuna, 10% en marzo. Las ventas minoristas marcaron una caída interanual del 6,6% en marzo.
-
-Desde el inicio de la gestión Milei, más de 24.000 empresas cerraron sus puertas. En el último año se destruyeron 124.000 empleos formales.
-
-Cuando el maestro contradice al alumno
-
-Roberto Frenkel —economista que fue profesor de Milei— puso en duda la viabilidad del programa económico del Gobierno en el mediano y largo plazo. Sostuvo que el esquema actual solo podría sostenerse si se corrige el tipo de cambio para generar superávit externo y acumular reservas genuinas.
-
-Cuando el maestro de Milei coincide con el ministro de Kicillof, el diagnóstico cruza la grieta.
-
-Qué está en juego
-
-La estrategia bonaerense no es solo retórica. Es preparación para 2027. Kicillof acaba de asumir la presidencia del PJ provincial. El mensaje que baja de La Plata se ordena en torno a un eje claro: la Nación abandonó a la Provincia más grande del país, y el peronismo bonaerense aparece como la alternativa institucional al modelo libertario.
-
-La Corte tiene ocho demandas para resolver. Y el lunes que viene Bianco vuelve a hablar.`,
-    categoria: 'Ejecutivo',
-    fecha: '2026-04-27T14:00:00',
-    plataforma: 'Redacción',
-    featured: true,
-    imagen: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=900&q=70'
-  },
-  {
-    id: 'n002',
-    titulo: 'El audio que incendió el grupo',
-    copete: '"Distintos contextos. A vos te tocó en Barcelona. A ella, presa." El mensaje que dejó Mayra Mendoza en el grupo de intendentes encendió la interna del peronismo bonaerense.',
-    cuerpo: `"Distintos contextos. A vos te tocó en Barcelona. A ella, presa." El mensaje lo dejó Mayra Mendoza en el grupo de intendentes. Carlos Bianco era el destinatario. La comparación, demoledora: la operación que sufrió en España, equiparada con la prisión de Cristina.
-
-Bianco no respondió. Otros sí.
-
-La intendenta que rompió el silencio
-
-Mayra escribe poco en el grupo. Cuando escribe, escribe fuerte. La frase pegó como pegan las cosas que se piensan dos días antes de mandarse.
-
-El grupo —donde están los 135 intendentes bonaerenses— se llenó de capturas que viajaron a otros chats en cuestión de minutos. Para el mediodía ya circulaba en mesas chicas del peronismo platense. Para la tarde, en redacciones.
-
-Una intendenta de la Tercera lo dijo en privado: "Mayra dijo lo que muchos pensábamos. Que Bianco se haga el héroe en una conferencia de prensa con el episodio de Barcelona, mientras Cristina sigue donde sigue, era difícil de bancar."
-
-El subtexto
-
-La frase no es solo sobre Bianco. Es sobre el reordenamiento del peronismo bonaerense después de que Kicillof asumiera el PJ. Traducción para iniciados: "Ustedes ahora se quedaron con todo, pero no se olviden quién está pagando el precio real."
-
-La Cámpora perdió la conducción provincial. No perdió la voz. Mayra es la voz.
-
-Lo que quedó en el aire
-
-Tres lecturas circulan en off. La primera, la más simple: Mayra perdió los estribos. La segunda, la más interesante: Mayra dijo lo que Cristina no puede decir en público pero piensa. La tercera, la más inquietante: el mensaje fue calibrado. Sirve para recordar que el cristinismo conserva poder de daño aunque haya cedido la conducción institucional.
-
-Las tres pueden ser verdad al mismo tiempo. En la rosca peronista, casi siempre lo son.
-
-La interna recién empieza. Y los chats no se borran.`,
-    categoria: 'Internas PJ',
-    fecha: '2026-04-24T18:00:00',
-    plataforma: 'Redacción',
-    featured: false,
-    imagen: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=900&q=70'
-  },
-  {
-    id: 'n003',
-    titulo: 'Kicillof asume el PJ bonaerense: ganó la batalla, la guerra sigue abierta',
-    copete: 'El gobernador asumió hoy la presidencia del PJ provincial en reemplazo de Máximo Kirchner. Lista de unidad, pero interna lejos de cerrarse. Máximo no estuvo.',
-    cuerpo: `Kicillof ganó la batalla institucional. La interna sigue abierta. Hoy a las 14hs asumió la presidencia del PJ bonaerense en reemplazo de Máximo Kirchner, que decidió no asistir al acto.
-
-La conducción
-
-Verónica Magario y Federico Otermín como vicepresidentes. Lista de unidad tras una dura negociación con La Cámpora que se extendió hasta último momento. Cascallares, del Movimiento de Desarrollo Federal, negoció hasta el final y terminó integrado a la lista.
-
-El bloque que acompañó a Kicillof en la construcción: Ferraresi, Alak, Secco, Cascallares. El bloque con dudas que finalmente bajó la cabeza: Otermín, Granados, Achaval, Mantegazza.
-
-La ausencia que habla
-
-Máximo Kirchner viajó a Puerto General San Martín para una charla política. La coincidencia de fecha no fue casual para nadie que lea la política bonaerense. El que cede la conducción no asiste al velorio propio.
-
-El mensaje de la ausencia es claro: La Cámpora entregó el partido pero no la lealtad. Dos lógicas distintas que van a convivir en el mismo espacio durante los próximos meses.
+La jornada incluye una celebracion ecumenica en honor al Papa Francisco, cuyo primer aniversario de muerte fue el 21 de abril. Se proyectara un video y dos curas villeros compartiran una oracion reivindicando sus ideas sobre el trabajo.
 
 Lo que viene
 
-Kicillof tiene ahora dos sombreros: gobernador y presidente del PJ bonaerense. El Movimiento Derecho al Futuro, que lanzó esta mañana en Avellaneda, es la plataforma para 2027. El partido es la herramienta institucional.
+Detras de la marcha de hoy hay una tension interna en la CGT. El ala combativa, nucleada en el Frente de Sindicatos Unidos de Abel Furlan, presiona por mas confrontacion. El triunvirato intenta sostener la unidad. La marcha de hoy es una foto de ese equilibrio fragil.`,
+    categoria: 'Ejecutivo',
+    fecha: '2026-04-30T10:00:00',
+    plataforma: 'Redaccion',
+    featured: true,
+    imagen: 'https://imgs.search.brave.com/XHElyOBGV2KWin-ZrbSR_J1qo83YNavmSFw2Jbytvq4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93d3cu/Y3JvbmlzdGEuY29t/L3Jlc2l6ZXIvdjIv/Y2d0LW1hcmNoYS1y/ZWZvcm1hLWxhYm9y/YWwtRUo1RFdaNkVE/VkE2WkhVWkZPWlha/SkZaSEkuanBnP2F1/dGg9ZDNmNDBhYmJl/NzNiNzc0NDg1ZDJl/ODgwYmMyMjg0MDU1/MzY0MGFjM2RkMzJh/ZmI2MzVkYjg5ZmM0/NzVhZmY5NiZzbWFy/dD10cnVlJndpZHRo/PTgwMCZoZWlnaHQ9/NDUwJnF1YWxpdHk9/NzA'
+  },
+  {
+    id: 'n002',
+    titulo: 'Kicillof debuta en la calle como jefe del PJ bonaerense',
+    copete: 'Primera marcha encabezando el peronismo bonaerense. El gobernador va a Plaza de Mayo junto a la CGT. El mensaje apunta a 2027.',
+    cuerpo: `Kicillof marcha hoy. Por primera vez como presidente del PJ bonaerense encabeza una movilizacion en la calle. El escenario: Plaza de Mayo, junto a la CGT, en la previa del Dia del Trabajador.
 
-La pregunta que nadie responde todavía: ¿puede un gobernador en ejercicio conducir el partido más grande del país y al mismo tiempo preparar una candidatura presidencial sin que el doble rol le pese?
+La decision tiene doble lectura. Por un lado, la unidad entre el sindicalismo y el peronismo bonaerense. Por el otro, el debut de Kicillof en un rol que hasta hace seis dias era de Maximo Kirchner.
 
-La interna recién empieza.`,
+El armado
+
+La convocatoria fue acordada en la primera reunion del Consejo del PJ bonaerense, el pasado 24 de abril. Magario, Otermin, Cascallares y los intendentes del Conurbano acompanan. El documento del PJ bonaerense fue claro: "Marchamos en defensa de los derechos del pueblo trabajador".
+
+La mirada de 2027
+
+El gobernador construye desde adentro. La presidencia del PJ le da estructura partidaria. La marcha de hoy le da imagen en la calle. El Movimiento Derecho al Futuro tiene plataforma. Solo falta la decision de candidatura.
+
+"El peronismo tiene vocacion de gobernar el pais", dijo Kicillof el viernes pasado. Hoy empieza a demostrarlo con los pies en el asfalto.`,
     categoria: 'Internas PJ',
-    fecha: '2026-04-24T16:00:00',
-    plataforma: 'Redacción',
+    fecha: '2026-04-30T09:00:00',
+    plataforma: 'Redaccion',
     featured: false,
-    imagen: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=900&q=70'
+    imagen: 'https://imgs.search.brave.com/3u9c-EF37ditJvP_DXDqBMmqtKE5IlC4cNXsZv7FOwI/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9kcHRk/c2JzYXMubnljMy5k/aWdpdGFsb2NlYW5z/cGFjZXMuY29tL3dw/LWNvbnRlbnQvdXBs/b2Fkcy8yMDI1LzAx/LzMwMDk0MDAwL2F4/ZWwta2ljaWxsb2Yt/bGEtbWFyY2hhLXVu/aXZlcnNpZGFkZXNq/cGVnLndlYnA'
+  },
+  {
+    id: 'n003',
+    titulo: 'El PJ Nacional se reune hoy: Cristina desde el domicilio, la interna con Kicillof como fondo',
+    copete: 'El Consejo Nacional del PJ convocado en medio de las tensiones con el kicillofismo. Cinco vicepresidentes conducen porque Cristina no puede. Mayans lleva la voz de la expresidenta.',
+    cuerpo: `"El PJ convoco a su Consejo Nacional en medio de la interna con Axel Kicillof." La frase circulo ayer en los grupos del peronismo bonaerense. El encuentro es hoy en la sede partidaria de CABA.
+
+Cinco vicepresidentes conducen porque Cristina Kirchner no puede participar por su condena domiciliaria. Su voz la lleva el senador formoseno Jose Mayans, vicepresidente primero del PJ y referente del kirchnerismo duro.
+
+El orden del dia
+
+Intervenciones en los PJ de Salta y Jujuy. Informe de normalizacion del PJ de Misiones. Convocatoria al proximo Congreso Nacional del partido. Y el tema no escrito pero presente en cada debate: como se para el PJ Nacional frente a la conduccion que Kicillof acaba de estrenar en la Provincia.
+
+El mensaje que viene de abajo
+
+Las ultimas declaraciones de Carlos Bianco tensaron la relacion: "Cristina esta proscripta, pero el peronismo no". La Campora lo leyo como un intento de separar al partido de su conduccion historica.
+
+Mayra Mendoza llego a la reunion del PJ bonaerense el viernes. Hablo poco. Observo mucho. Los chats no se borran, pero las reuniones formales tienen otro protocolo.
+
+Tres preguntas sin respuesta
+
+Primera: cuanto poder real conserva Cristina sobre el PJ bonaerense ahora que Kicillof conduce. Segunda: si el kirchnerismo duro va a construir su propia candidatura para 2027. Tercera: cuando explota lo que hoy se disimula con documentos de unidad.`,
+    categoria: 'Internas PJ',
+    fecha: '2026-04-30T08:00:00',
+    plataforma: 'Redaccion',
+    featured: false,
+    imagen: 'https://imgs.search.brave.com/sI0CZxA6PORjlRm2mo3Js2qc-240djzXNw-TwHkKDvs/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9mb3Rv/cy5wZXJmaWwuY29t/Ly8yMDI0LzEyLzEx/LzkwMC8wL2NyaXN0/aW5hLWFzdW1pby1s/YS1wcmVzaWRlbmNp/YS1kZWwtcGotMTky/ODkxNS5qcGc_d2Vi/cA'
+  },
+  {
+    id: 'n004',
+    titulo: 'Intendentes bonaerenses marchan al Ministerio de Capital Humano por el SAE',
+    copete: 'Los jefes comunales exigen la restitucion de fondos para comedores y el Servicio Alimentario Escolar. Magario encabeza. El Conurbano en pie de guerra contra el ajuste nacional.',
+    cuerpo: `Los intendentes bonaerenses marchan hoy al Ministerio de Capital Humano. El reclamo es concreto: la restitucion de los fondos del Servicio Alimentario Escolar y los programas alimentarios recortados por el Gobierno nacional.
+
+El SAE atiende a millones de estudiantes en la Provincia. Desde que el Gobierno nacional discontinuo el financiamiento, la Provincia lo sostiene exclusivamente con fondos propios. Eso tiene un techo.
+
+Magario encabeza
+
+La vicegobernadora Veronica Magario lidera la columna. El compromiso fue asumido en la primera reunion del Consejo del PJ bonaerense: "Acompanamos la marcha de la CGT y nos movilizamos al Ministerio de Capital Humano para exigir la restitucion de los fondos del SAE".
+
+Los numeros del ajuste
+
+El Gobierno nacional recorto el SAE, el Plan Remediar, el FONID y los comedores comunitarios. La Provincia aporta el 40% de los recursos nacionales pero recibio menos del 7% de lo recaudado en el primer trimestre del ano. Esa brecha es el combustible politico de la marcha de hoy.
+
+Lo que piden
+
+Restitucion inmediata de los fondos del SAE. Reapertura del Plan Remediar. Reactivacion de las obras publicas paralizadas. Y una reunion formal con las autoridades del Ministerio antes de que termine el dia.`,
+    categoria: 'Conurbano',
+    fecha: '2026-04-30T07:00:00',
+    plataforma: 'Redaccion',
+    featured: false,
+    imagen: 'https://imgs.search.brave.com/Y20VE2aEk0f_l39boKlfvtvywTqT2CGGjIL1v-kNyj0/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9sYXZl/cmRhZG9ubGluZS5j/b20vd3AtY29udGVu/dC91cGxvYWRzLzIw/MjYvMDQvaW50ZW5k/ZW50ZXMtZWNvbm9t/aWEtMTAwMHg1NzAu/d2VicA'
+  },
+  {
+    id: 'n005',
+    titulo: 'La reforma laboral que enfrenta la CGT: que dice la ley y por que la llevan a la Justicia',
+    copete: 'La CGT fue a tribunales para declarar inconstitucional la reforma laboral aprobada en febrero. El eje del conflicto: las limitaciones al derecho a huelga. El Conurbano concentra el mayor rechazo.',
+    cuerpo: `La CGT no solo marcha. Tambien litiga. Tras la aprobacion de la reforma laboral en febrero, la central obrera acudio a la Justicia para declarar su inconstitucionalidad. El eje del conflicto esta en las limitaciones que la ley impone sobre el derecho a huelga.
+
+Que dice la reforma
+
+La ley modifica el regimen de negociacion colectiva, restringe el alcance de las medidas de fuerza y establece nuevas condiciones para la declaracion de servicios esenciales. Para la CGT es una afrenta directa a las libertades sindicales garantizadas por la Constitucion.
+
+El Conurbano en el centro
+
+El mayor rechazo viene del Conurbano bonaerense. La industria manufacturera, la construccion y el transporte — rubros con fuerte presencia sindical en el segundo y tercer cordon — son los sectores mas afectados por la combinacion de reforma laboral mas ajuste economico.
+
+La tension interna en la CGT
+
+El ala combativa liderada por Abel Furlan (UOM) creo el Frente de Sindicatos Unidos con Aceiteros, ATE y las dos CTA. La presion es por mas confrontacion. El triunvirato intenta sostener la unidad sin fractura.
+
+La marcha de hoy es la primera gran prueba de fuego. Si la convocatoria es masiva, el triunvirato gana tiempo. Si es floja, la presion interna escala.`,
+    categoria: 'Economia',
+    fecha: '2026-04-30T06:00:00',
+    plataforma: 'Redaccion',
+    featured: false,
+    imagen: 'https://imgs.search.brave.com/qLG2b3mSisCIJbSeVOneynjrLKww5g4pt6GSxDfr8u8/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9yZXNp/emVyLmdsYW5hY2lv/bi5jb20vcmVzaXpl/ci92Mi9sYS1jdXB1/bGEtZGUtbGEtY2d0/LWZ1ZS1oYXN0YS10/cmlidW5hbGVzLXBh/cmEtVE1ZRTZFRURF/TkdOWERERFFQSFJZ/TDUyM1UuSlBHP2F1/dGg9NzJmZmQ0NTk5/NDc2M2ZmOWNjYzk5/ZmJmYzdjYzFmOTdl/YTI3Zjc4YjE4ZGEy/NDUzODgzYTlmYmEx/ZWRmNjkyZSZ3aWR0/aD0zMjAmaGVpZ2h0/PTIxMyZxdWFsaXR5/PTcwJnNtYXJ0PXRy/dWU'
   }
 ];
 
@@ -2163,12 +2188,15 @@ function renderPortada() {
   feedList.innerHTML = '';
   trendDiv.innerHTML = '';
 
-  // Empty state
+  // Empty state - show 3 placeholder cards
   if (noticias.length === 0) {
-    const msg = currentFilter === 'Todo' 
-      ? 'Todavía no hay noticias publicadas.' 
-      : 'No hay noticias en esta categoría.';
-    leadGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:4rem 2rem;font-family:var(--serif);font-style:italic;color:var(--ink-faint);border:1px dashed var(--line)">${msg}</div>`;
+    for (let i = 0; i < 3; i++) {
+      const placeholder = document.createElement('div');
+      placeholder.className = i === 0 ? 'lead-big' : 'lead-med';
+      placeholder.style.cssText = 'min-height:280px;display:flex;align-items:center;justify-content:center;cursor:default;';
+      placeholder.innerHTML = '<div style="text-align:center;padding:2rem"><div style="font-size:2rem;margin-bottom:0.5rem;color:var(--gold);opacity:0.3">···</div><div style="font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-faint)">Próximamente</div></div>';
+      leadGrid.appendChild(placeholder);
+    }
     document.getElementById('feed-footer').style.display = 'none';
     document.getElementById('section-count').textContent = '0 notas';
     return;
@@ -2226,11 +2254,12 @@ function renderPortada() {
     leadGrid.appendChild(medArticle);
   }
 
-  // Placeholders if needed
+  // Placeholders if needed - match lead-med style
   for (let i = secondaries.length; i < 2; i++) {
     const placeholder = document.createElement('div');
-    placeholder.style.cssText = 'border:1px dashed var(--line);min-height:280px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;color:var(--ink-mute);font-size:0.9rem';
-    placeholder.textContent = '···';
+    placeholder.className = 'lead-med';
+    placeholder.style.cssText = 'min-height:280px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;color:var(--ink-mute);font-size:0.9rem;cursor:default;';
+    placeholder.innerHTML = '<div style="text-align:center;padding:2rem"><div style="font-size:2rem;margin-bottom:0.5rem;color:var(--gold);opacity:0.3">···</div><div style="font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-faint)">Próximamente</div></div>';
     leadGrid.appendChild(placeholder);
   }
 
@@ -2385,11 +2414,113 @@ document.getElementById('btn-ver-mas').addEventListener('click', function() {
 });
 
 // ========================================
+// NOTION API CONFIG
+// ========================================
+
+// Token is now handled by Cloudflare Worker
+// DB ID is now handled by Cloudflare Worker
+
+async function fetchFromNotion() {
+  try {
+    // Use Cloudflare Worker as secure proxy
+    const response = await fetch('https://notion-proxy.provinciapolitica.workers.dev', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) throw new Error('Notion API error');
+    
+    const data = await response.json();
+    
+    // Convert Notion pages to our format
+    const noticias = data.results.map((page, idx) => {
+      const props = page.properties;
+      
+      const getTitle = (p) => p?.title?.[0]?.plain_text || '';
+      const getText = (p) => p?.rich_text?.[0]?.plain_text || '';
+      const getSelect = (p) => p?.select?.name || '';
+      const getUrl = (p) => p?.url || '';
+      const getCheck = (p) => p?.checkbox || false;
+
+      return {
+        id: page.id,
+        titulo: getTitle(props['Nombre'] || props['Name']),
+        copete: getText(props['Copete']),
+        cuerpo: getText(props['Cuerpo']),
+        imagen: getUrl(props['Imagen']),
+        categoria: getSelect(props['Categoría'] || props['Categoria']),
+        featured: getCheck(props['Destacada']),
+        fecha: page.created_time,
+        plataforma: 'Redacción'
+      };
+    }).filter(n => n.titulo);
+
+    if (noticias.length > 0) {
+      // Save to localStorage and render
+      saveNoticias(noticias);
+      renderPortada();
+      console.log(`Cargadas ${noticias.length} noticias desde Notion`);
+    } else {
+      renderPortada();
+    }
+  } catch (error) {
+    console.warn('No se pudo conectar con Notion, usando datos locales:', error);
+    renderPortada();
+  }
+}
+
+// ========================================
 // INITIAL RENDER
 // ========================================
 
-renderPortada();
+// Try Notion first, fallback to local data
+fetchFromNotion();
 </script>
+
+
+<!-- MODAL NOTICIA -->
+<div id="modal-noticia">
+  <div class="modal-inner">
+    <button id="modal-back-btn" class="modal-back">← Volver</button>
+    <img id="modal-img" src="" alt="" style="width:100%;max-height:420px;object-fit:cover;display:none;margin-bottom:1.5rem;">
+    <div id="modal-meta" style="margin-bottom:1rem;display:flex;gap:1rem;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint)"></div>
+    <h1 id="modal-title" style="font-family:var(--serif);font-size:clamp(1.6rem,4vw,2.4rem);font-weight:900;line-height:1.08;margin-bottom:1rem;color:var(--ink)"></h1>
+    <p id="modal-copete" style="font-family:var(--serif);font-size:1.15rem;font-style:italic;color:var(--ink-dim);margin-bottom:1.5rem;line-height:1.5;border-left:3px solid var(--gold);padding-left:1rem"></p>
+    <div id="modal-cuerpo" style="font-family:var(--serif);font-size:1.05rem;line-height:1.75;color:var(--ink-dim)"></div>
+    <div id="modal-plat-bar" style="margin-top:2rem;font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--ink-faint);text-transform:uppercase;border-top:1px solid var(--line);padding-top:1rem"></div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-panel">
+  <h3 style="font-family:var(--serif);font-size:1.4rem;margin-bottom:1.5rem;color:var(--ink)">Administrar noticias</h3>
+  <div id="admin-list" style="margin-bottom:2rem"></div>
+  <hr style="border-color:var(--line);margin-bottom:1.5rem">
+  <h4 style="font-family:var(--mono);font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem">Nueva noticia</h4>
+  <div style="display:grid;gap:0.8rem">
+    <input id="adm-titulo" placeholder="Título" style="background:var(--bg-soft);border:1px solid var(--line);color:var(--ink);padding:0.6rem 0.8rem;font-family:var(--sans);font-size:0.9rem;width:100%">
+    <input id="adm-copete" placeholder="Copete / bajada" style="background:var(--bg-soft);border:1px solid var(--line);color:var(--ink);padding:0.6rem 0.8rem;font-family:var(--sans);font-size:0.9rem;width:100%">
+    <textarea id="adm-cuerpo" placeholder="Cuerpo de la nota..." rows="6" style="background:var(--bg-soft);border:1px solid var(--line);color:var(--ink);padding:0.6rem 0.8rem;font-family:var(--sans);font-size:0.9rem;width:100%;resize:vertical"></textarea>
+    <input id="adm-imagen" placeholder="URL de imagen (opcional)" style="background:var(--bg-soft);border:1px solid var(--line);color:var(--ink);padding:0.6rem 0.8rem;font-family:var(--sans);font-size:0.9rem;width:100%">
+    <select id="adm-cat" style="background:var(--bg-soft);border:1px solid var(--line);color:var(--ink);padding:0.6rem 0.8rem;font-family:var(--sans);font-size:0.9rem;width:100%">
+      <option>Ejecutivo</option>
+      <option>Legislatura</option>
+      <option>Internas PJ</option>
+      <option>Conurbano</option>
+      <option>Oposición</option>
+      <option>Economía</option>
+      <option>Última hora</option>
+    </select>
+    <label style="display:flex;align-items:center;gap:0.5rem;font-family:var(--mono);font-size:11px;color:var(--ink-dim);cursor:pointer">
+      <input type="checkbox" id="adm-featured"> Noticia destacada (principal)
+    </label>
+    <button onclick="adminGuardar()" style="background:var(--gold);color:var(--bg);padding:0.7rem 1.5rem;font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;border:none">Publicar noticia</button>
+  </div>
+  <button onclick="document.getElementById('admin-panel').classList.remove('open')" style="margin-top:1.5rem;background:transparent;border:1px solid var(--line);color:var(--ink-faint);padding:0.5rem 1rem;font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase">Cerrar</button>
+</div>
+
 
 </body>
 </html>
