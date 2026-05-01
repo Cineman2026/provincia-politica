@@ -1433,16 +1433,19 @@
 
     .modal-back {
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 12px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--ink-dim);
-      background: transparent;
+      color: var(--bg);
+      background: var(--gold);
       border: none;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
+      padding: 0.5rem 1.2rem;
+      margin-bottom: 2rem;
+      border-radius: 2px;
     }
 
     .modal-back::before {
@@ -1838,6 +1841,9 @@
 
 <main class="wrap">
   <!-- FEATURED STORIES (3) -->
+  <div class="section-title-row" style="margin-bottom:1rem;">
+    <h2 class="section-title">Noticias <em>destacadas</em></h2>
+  </div>
   <section class="lead-grid" id="lead-grid"></section>
 
   <!-- 2-COLUMN LAYOUT: News Feed + Sidebar -->
@@ -2492,15 +2498,34 @@ function openNoticia(id) {
   document.getElementById('modal-noticia').classList.add('open');
   document.body.style.overflow = 'hidden';
   window.scrollTo(0, 0);
+  // Push state so back button closes modal instead of leaving page
+  history.pushState('noticia', '', '#noticia');
 }
 
-const modalBackBtn = document.getElementById('modal-back-btn');
-if (modalBackBtn) {
-  modalBackBtn.addEventListener('click', function() {
-    document.getElementById('modal-noticia').classList.remove('open');
-    document.body.style.overflow = '';
-  });
+// Use delegated event listener so it works regardless of DOM order
+document.addEventListener('click', function(e) {
+  if (e.target && (e.target.id === 'modal-back-btn' || e.target.closest('#modal-back-btn'))) {
+    closeModal();
+  }
+});
+
+function closeModal() {
+  const modal = document.getElementById('modal-noticia');
+  if (modal) modal.classList.remove('open');
+  document.body.style.overflow = '';
+  // Restore hash without triggering navigation
+  if (window.location.hash === '#noticia') {
+    history.pushState('', document.title, window.location.pathname);
+  }
 }
+
+// Handle browser back button - intercept to close modal instead of leaving page
+window.addEventListener('popstate', function(e) {
+  const modal = document.getElementById('modal-noticia');
+  if (modal && modal.classList.contains('open')) {
+    closeModal();
+  }
+});
 
 // ========================================
 // NAVIGATION
