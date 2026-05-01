@@ -1628,8 +1628,8 @@
 
       /* HERO REDUCIDO EN MOBILE */
       .video-hero {
-        height: 52vh;
-        min-height: 300px;
+        height: 45vh;
+        min-height: 260px;
       }
       .vh-kicker {
         font-size: 8px;
@@ -1637,18 +1637,99 @@
         margin-bottom: 0.6rem;
       }
       .vh-title {
-        font-size: clamp(2rem, 10vw, 2.8rem);
+        font-size: clamp(1.8rem, 9vw, 2.4rem);
         line-height: 1;
         margin-bottom: 0.5rem;
       }
       .vh-sub {
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         line-height: 1.4;
         max-width: 85%;
       }
       .vh-content {
         padding: 1.5rem 1.2rem 2rem;
         justify-content: flex-end;
+      }
+
+      /* NOTICIAS EN LISTA VERTICAL EN MOBILE */
+      .lead-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+        margin-top: 0 !important;
+        position: relative !important;
+      }
+
+      .lead-big,
+      .lead-med {
+        flex-direction: row !important;
+        gap: 0.8rem !important;
+        padding: 0.8rem !important;
+        border-top: none !important;
+        border-bottom: 1px solid var(--line) !important;
+        align-items: center !important;
+        min-height: auto !important;
+        backdrop-filter: none !important;
+        background: var(--bg) !important;
+      }
+
+      .lead-big:first-child {
+        border-top: 3px solid var(--gold) !important;
+      }
+
+      .lead-img {
+        width: 90px !important;
+        min-width: 90px !important;
+        height: 70px !important;
+        aspect-ratio: unset !important;
+        flex-shrink: 0 !important;
+      }
+
+      .lead-med .lead-img {
+        width: 90px !important;
+        min-width: 90px !important;
+        height: 70px !important;
+        aspect-ratio: unset !important;
+      }
+
+      .lead-big > div:last-child,
+      .lead-med > div:last-child {
+        padding: 0 !important;
+        flex: 1 !important;
+      }
+
+      .lead-big .lead-title,
+      .lead-med .lead-title {
+        font-size: 0.9rem !important;
+        line-height: 1.25 !important;
+        margin-bottom: 0.2rem !important;
+      }
+
+      .lead-dek {
+        display: none !important;
+      }
+
+      .lead-cat {
+        font-size: 9px !important;
+        margin-bottom: 0.2rem !important;
+      }
+
+      .lead-meta {
+        display: none !important;
+      }
+
+      /* SECTION TITLE EN MOBILE */
+      .section-title-row {
+        margin-bottom: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+      }
+
+      .section-title {
+        font-size: 1rem !important;
+        letter-spacing: 0.05em !important;
+      }
+
+      .section-count {
+        font-size: 9px !important;
       }
     }
   </style>
