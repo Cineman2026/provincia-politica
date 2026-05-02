@@ -2062,12 +2062,7 @@
 const STORAGE_KEY = 'pp_noticias_v1';
 const PAGE_SIZE = 6;
 const DEFAULT_IMGS = [
-  'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=900&q=70',
-  'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=900&q=70',
-  'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=900&q=70',
-  'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=900&q=70',
-  'https://images.unsplash.com/photo-1591955506264-3f5a6834570a?w=900&q=70',
-  'https://images.unsplash.com/photo-1555848962-6e79363ec33b?w=900&q=70',
+  'https://cineman2026.github.io/provincia-politica/assets/imagen_institucional.jpg',
 ];
 
 let visibleCount = PAGE_SIZE;
@@ -2330,7 +2325,7 @@ function renderPortada() {
   bigArticle.innerHTML = `
     <div class="lead-img">
       <img src="${escHtml(featured.imagen || getDefaultImg(featured.id))}" alt="" 
-           onerror="this.style.display='none'">
+           onerror="this.src='${getDefaultImg(featured.id)}'">
     </div>
     <div>
       <div class="lead-cat">${escHtml(featured.categoria)}</div>
@@ -2354,7 +2349,7 @@ function renderPortada() {
     medArticle.innerHTML = `
       <div class="lead-img">
         <img src="${escHtml(sec.imagen || getDefaultImg(sec.id))}" alt="" 
-             onerror="this.style.display='none'">
+             onerror="this.src='${getDefaultImg(sec.id)}'">
       </div>
       <div>
         <div class="lead-cat">${escHtml(sec.categoria)}</div>
@@ -2392,7 +2387,7 @@ function renderPortada() {
       row.innerHTML = `
         <div class="feed-row-img">
           <img src="${escHtml(n.imagen || getDefaultImg(n.id))}" alt="" 
-               onerror="this.style.display='none'">
+               onerror="this.src='${getDefaultImg(n.id)}'">
         </div>
         <div class="feed-body">
           <div class="feed-cat">${escHtml(n.categoria)}</div>
