@@ -1,0 +1,55 @@
+name: Agente Redactor — Provincia Política
+
+on:
+  schedule:
+    # Turno mañana: 7am hora Argentina (10:00 UTC)
+    - cron: '0 10 * * *'
+    # Turno mediodía: 12pm hora Argentina (15:00 UTC)
+    - cron: '0 15 * * *'
+    # Turno tarde: 6pm hora Argentina (21:00 UTC)
+    - cron: '0 21 * * *'
+  # Permite ejecutarlo manualmente desde GitHub Actions
+  workflow_dispatch:
+    inputs:
+      tema:
+        description: 'Tema específico para redactar (opcional)'
+        required: false
+        default: ''
+      turno:
+        description: 'Turno del día'
+        required: false
+        default: 'manual'
+        type: choice
+        options:
+          - manual
+          - manana
+          - mediodia
+          - tarde
+
+jobs:
+  redactar:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+      
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Instalar dependencias
+        run: pip install requests
+      
+      - name: Ejecutar Agente Redactor
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_ID: ${{ secrets.NOTION_DB_ID }}
+        run: |
+          if [ -n "${{ github.event.inputs.tema }}" ]; then
+            python agente_redactor.py --tema "${{ github.event.inputs.tema }}" --turno "${{ github.event.inputs.turno }}"
+          else
+            python agente_redactor.py
+          fi
