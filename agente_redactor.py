@@ -21,6 +21,8 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 NOTION_TOKEN      = os.environ.get("NOTION_TOKEN")
 NOTION_DB_ID      = os.environ.get("NOTION_DB_ID", "352e199864dd80e1af24f0b661dbd896")
 
+IMAGEN_INSTITUCIONAL = 'https://cineman2026.github.io/provincia-politica/assets/imagen_institucional.jpg'
+
 FUENTES = [
     "letrap.com.ar",
     "latecla.info",
@@ -98,6 +100,60 @@ def detectar_turno():
         return "mediodia"
     else:
         return "tarde"
+
+
+def verificar_imagen(url):
+    """Verifica que una URL de imagen sea accesible públicamente."""
+    if not url:
+        return False
+    if not any(url.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']):
+        return False
+    try:
+        r = requests.head(url, timeout=5, allow_redirects=True)
+        return r.status_code == 200
+    except:
+        return False
+
+
+def buscar_imagen(tema_nota, fuentes_prioritarias=None):
+    """Busca una imagen válida para la nota usando la API de Claude con web search."""
+    if not ANTHROPIC_API_KEY:
+        return IMAGEN_INSTITUCIONAL
+
+    prompt = f"""Buscá una imagen periodística para esta nota: {tema_nota}
+
+Buscá en cualquier fuente web. Priorizá: telam.com.ar, prensa.gba.gob.ar, wikimedia.org, infobae.com, lanacion.com.ar.
+
+Reglas estrictas:
+1. La URL debe terminar en .jpg, .jpeg, .png o .webp
+2. Debe ser una imagen de prensa, no de redes sociales
+3. Debe corresponder al tema de la nota
+4. Sin espacios ni caracteres especiales en la URL
+
+Respondé SOLO con la URL de la imagen, nada más. Si no encontrás ninguna válida, respondé exactamente: NINGUNA"""
+
+    try:
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01"},
+            json={
+                "model": "claude-opus-4-6",
+                "max_tokens": 200,
+                "tools": [{{"type": "web_search_20250305", "name": "web_search"}}],
+                "messages": [{{"role": "user", "content": prompt}}]
+            },
+            timeout=30
+        )
+        data = response.json()
+        for block in data.get("content", []):
+            if block.get("type") == "text":
+                url = block.get("text", "").strip()
+                if url and url != "NINGUNA" and verificar_imagen(url):
+                    return url
+    except:
+        pass
+    
+    return IMAGEN_INSTITUCIONAL
 
 
 def buscar_y_redactar(tema=None, turno="manual"):
@@ -186,6 +242,15 @@ Respondé SOLO con el JSON, sin texto adicional."""
 
 
 def cargar_en_notion(nota, turno="manual"):
+    # Si no hay imagen válida, buscar una o usar la institucional
+    if not nota.get('imagen') or not verificar_imagen(nota.get('imagen', '')):
+        print(f"  🔍 Buscando imagen para: {nota['titulo'][:50]}...")
+        nota['imagen'] = buscar_imagen(nota['titulo'])
+        if nota['imagen'] == IMAGEN_INSTITUCIONAL:
+            print(f"  🏢 Usando imagen institucional")
+        else:
+            print(f"  ✅ Imagen encontrada")
+
     """Carga una nota en Notion como borrador."""
     
     if not NOTION_TOKEN:
