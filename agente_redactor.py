@@ -214,7 +214,12 @@ Respondé SOLO con el JSON, sin texto adicional."""
         timeout=120
     )
     if not response.ok:
-        print(f"❌ Detalle del error: {response.text}")
+        try:
+            err_data = response.json()
+            err_msg = err_data.get("error", {}).get("message", response.text)
+            print(f"❌ Error Anthropic API: {err_msg}")
+        except Exception:
+            print(f"❌ Respuesta de error: {response.text}")
     response.raise_for_status()
     data = response.json()
     
