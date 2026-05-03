@@ -137,7 +137,7 @@ Respondé SOLO con la URL de la imagen, nada más. Si no encontrás ninguna vál
             "https://api.anthropic.com/v1/messages",
             headers={"Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01"},
             json={
-                "model": "claude-3-5-sonnet-20241022",
+                "model": "claude-sonnet-4-20250514",
                 "max_tokens": 200,
                 "messages": [{"role": "user", "content": prompt}]
             },
@@ -200,7 +200,7 @@ Respondé SOLO con el JSON, sin texto adicional."""
     }
     
     payload = {
-        "model": "claude-3-5-sonnet-20241022",
+        "model": "claude-sonnet-4-20250514",
         "max_tokens": 4000,
         "system": SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": user_prompt}]
