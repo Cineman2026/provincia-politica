@@ -213,6 +213,8 @@ Respondé SOLO con el JSON, sin texto adicional."""
         json=payload,
         timeout=120
     )
+    if not response.ok:
+        print(f"❌ Detalle del error: {response.text}")
     response.raise_for_status()
     data = response.json()
     
