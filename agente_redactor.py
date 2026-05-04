@@ -277,7 +277,7 @@ def cargar_en_notion(nota, turno="manual"):
                 "title": [{"text": {"content": titulo_completo}}]
             },
             "Copete": {
-                "rich_text": [{"text": {"content": nota.get("copete", "")}}]
+                "rich_text": [{"text": {"content": nota.get("copete", "")[:1999]}}]
             },
             "Cuerpo": {
                 "rich_text": [{"text": {"content": nota.get("cuerpo", "")[:2000]}}]
