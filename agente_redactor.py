@@ -282,14 +282,8 @@ def cargar_en_notion(nota, turno="manual"):
             "Cuerpo": {
                 "rich_text": [{"text": {"content": nota.get("cuerpo", "")[:2000]}}]
             },
-            "Categoría": {
-                "select": {"name": nota.get("categoria", "Última hora")}
-            },
             "Estado": {
                 "select": {"name": "Borrador"}
-            },
-            "Destacada": {
-                "checkbox": False
             }
         }
     }
