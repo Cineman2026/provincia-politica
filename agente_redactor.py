@@ -288,6 +288,12 @@ def cargar_en_notion(nota, turno="manual"):
         }
     }
 
+    # Agregar fecha de publicación (hora actual en Argentina)
+    from datetime import timezone, timedelta
+    tz_arg = timezone(timedelta(hours=-3))
+    ahora = datetime.now(tz_arg).strftime("%Y-%m-%dT%H:%M:%S-03:00")
+    payload["properties"]["Fecha de publicación"] = {"date": {"start": ahora}}
+
     # Agregar imagen solo si hay URL válida
     imagen_url = nota.get("imagen", "").strip()
     if imagen_url:
