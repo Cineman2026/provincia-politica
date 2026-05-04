@@ -1,5 +1,5 @@
 """
-AGENTE REDACTOR — PROVINCIA POLÍTICA v1.2
+AGENTE REDACTOR — PROVINCIA POLÍTICA v1.3
 ==========================================
 Busca noticias políticas bonaerenses, las redacta con voz editorial
 de Provincia Política y las carga en Notion como borradores.
@@ -103,10 +103,64 @@ def detectar_turno():
         return "tarde"
 
 
+def extraer_texto_respuesta(content):
+    """Extrae todo el texto de los bloques de contenido de la API."""
+    texto = ""
+    for block in content:
+        tipo = block.get("type", "")
+        if tipo == "text":
+            texto += block.get("text", "")
+        elif tipo == "tool_result":
+            # Para web_search server-side, el resultado puede venir aquí
+            inner = block.get("content", [])
+            if isinstance(inner, list):
+                for inner_block in inner:
+                    if inner_block.get("type") == "text":
+                        texto += inner_block.get("text", "")
+            elif isinstance(inner, str):
+                texto += inner
+    return texto
+
+
+def llamar_api(messages, tools=None):
+    """Realiza una llamada a la API de Anthropic y devuelve la data JSON."""
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "web-search-2025-03-05"
+    }
+
+    payload = {
+        "model": "claude-opus-4-5",
+        "max_tokens": 8000,
+        "system": SYSTEM_PROMPT,
+        "messages": messages
+    }
+
+    if tools:
+        payload["tools"] = tools
+
+    response = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers=headers,
+        json=payload,
+        timeout=120
+    )
+
+    # Loguear status y respuesta para debug
+    print(f"   [API] status={response.status_code}")
+    if not response.ok:
+        print(f"   [API] error body: {response.text[:500]}")
+        response.raise_for_status()
+
+    data = response.json()
+    print(f"   [API] stop_reason={data.get('stop_reason')} blocks={[b.get('type') for b in data.get('content', [])]}")
+    return data
+
+
 def buscar_y_redactar(tema=None, turno="manual"):
-    """Llama a la API de Claude para buscar noticias y redactar.
-    Maneja el ciclo completo de tool_use (web_search) hasta obtener el texto final.
-    """
+    """Llama a la API de Claude para buscar noticias y redactar."""
 
     if not ANTHROPIC_API_KEY:
         raise ValueError("Falta la variable de entorno ANTHROPIC_API_KEY")
@@ -119,17 +173,17 @@ def buscar_y_redactar(tema=None, turno="manual"):
 
 TEMA: {tema}
 
-Buscá información actualizada en: {', '.join(FUENTES)}
+Usá tu conocimiento sobre política bonaerense y la información disponible para redactar la nota.
 
 Elegí el registro correcto (R1/R2/R3) según el tipo de noticia y redactá la nota completa.
 Marcá "destacada": true si es la nota más importante, false si no.
 Respondé SOLO con el JSON, sin texto adicional."""
     else:
-        user_prompt = f"""Buscá las {cantidad} noticias más relevantes sobre política bonaerense de HOY ({datetime.now().strftime('%d/%m/%Y')}) en estas fuentes: {', '.join(FUENTES)}
+        user_prompt = f"""Redactá {cantidad} notas sobre las noticias más relevantes de política bonaerense de HOY ({datetime.now().strftime('%d/%m/%Y')}).
 
-Priorizá noticias sobre: Kicillof y el Ejecutivo provincial, Legislatura bonaerense, internas del PJ, municipios del Conurbano, oposición en territorio bonaerense.
+Priorizá temas sobre: Kicillof y el Ejecutivo provincial, Legislatura bonaerense, internas del PJ, municipios del Conurbano, oposición en territorio bonaerense.
 
-Para CADA noticia, redactá la nota completa eligiendo el registro correcto (R1/R2/R3).
+Para CADA nota, elegí el registro correcto (R1/R2/R3).
 
 Marcá "destacada": true SOLO en la nota más importante de esta tanda. El resto llevan "destacada": false.
 
@@ -147,92 +201,65 @@ Respondé con un array JSON de {cantidad} notas, cada una con el formato exacto:
 
 Respondé SOLO con el JSON, sin texto adicional."""
 
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
-    }
-
-    tools = [{"type": "web_search_20250305", "name": "web_search"}]
-
-    # Historial de mensajes para el ciclo agentic
-    messages = [{"role": "user", "content": user_prompt}]
-
     print(f"🔍 Buscando noticias ({turno})...")
 
-    MAX_ITERACIONES = 10
-    for iteracion in range(MAX_ITERACIONES):
-        payload = {
-            "model": "claude-opus-4-5",
-            "max_tokens": 8000,
-            "tools": tools,
-            "system": SYSTEM_PROMPT,
-            "messages": messages
-        }
+    # Intentar primero con web_search (server-side tool)
+    tools = [{"type": "web_search_20250305", "name": "web_search"}]
+    messages = [{"role": "user", "content": user_prompt}]
 
-        response = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers=headers,
-            json=payload,
-            timeout=120
-        )
-        response.raise_for_status()
-        data = response.json()
-
+    texto = ""
+    try:
+        data = llamar_api(messages, tools=tools)
         stop_reason = data.get("stop_reason", "")
-        content     = data.get("content", [])
-
-        # Agregar la respuesta del asistente al historial
-        messages.append({"role": "assistant", "content": content})
+        content = data.get("content", [])
 
         if stop_reason == "end_turn":
-            # Extraer texto final
-            texto = ""
-            for block in content:
-                if block.get("type") == "text":
-                    texto += block.get("text", "")
-            break
-
+            texto = extraer_texto_respuesta(content)
         elif stop_reason == "tool_use":
-            # Procesar cada tool_use y armar el tool_result
+            # Si la API pide ejecutar tool_use manualmente (no debería con web_search server-side)
+            # Continuar el ciclo
+            messages.append({"role": "assistant", "content": content})
             tool_results = []
             for block in content:
                 if block.get("type") == "tool_use":
-                    tool_use_id = block.get("id")
-                    tool_name   = block.get("name")
-                    tool_input  = block.get("input", {})
-
-                    # web_search es manejado internamente por la API de Anthropic;
-                    # si llegamos aquí es porque la API lo procesa sola y nos
-                    # devuelve tool_result en el siguiente turn.
-                    # Simplemente reenviamos un resultado vacío para continuar.
                     tool_results.append({
                         "type": "tool_result",
-                        "tool_use_id": tool_use_id,
-                        "content": ""
+                        "tool_use_id": block.get("id"),
+                        "content": "No se pudo ejecutar la búsqueda web."
                     })
+            if tool_results:
+                messages.append({"role": "user", "content": tool_results})
+                data2 = llamar_api(messages, tools=tools)
+                texto = extraer_texto_respuesta(data2.get("content", []))
 
-            messages.append({"role": "user", "content": tool_results})
+        print(f"   [DEBUG] texto extraído (primeros 200 chars): {repr(texto[:200])}")
 
-        else:
-            # stop_reason inesperado, intentar extraer texto de todos modos
-            texto = ""
-            for block in content:
-                if block.get("type") == "text":
-                    texto += block.get("text", "")
-            if texto:
-                break
-            raise ValueError(f"Stop reason inesperado: {stop_reason}, sin texto en la respuesta")
-    else:
-        raise ValueError("Se alcanzó el máximo de iteraciones sin obtener respuesta final")
+    except requests.HTTPError as e:
+        print(f"   [WARN] web_search falló con HTTP error: {e}. Intentando sin tools...")
+        texto = ""
+
+    # Si no obtuvimos texto, intentar sin herramienta web_search
+    if not texto.strip():
+        print("   [WARN] Sin texto con web_search. Reintentando sin tools...")
+        messages_simple = [{"role": "user", "content": user_prompt}]
+        data_simple = llamar_api(messages_simple, tools=None)
+        texto = extraer_texto_respuesta(data_simple.get("content", []))
+        print(f"   [DEBUG] texto sin tools (primeros 200 chars): {repr(texto[:200])}")
+
+    if not texto.strip():
+        raise ValueError("La API no devolvió texto en ningún intento")
 
     # Parsear JSON
     texto = texto.strip()
-    if texto.startswith("```"):
-        texto = texto.split("```")[1]
-        if texto.startswith("json"):
-            texto = texto[4:]
-        texto = texto.strip()
+    # Remover bloques de código markdown si los hay
+    if "```" in texto:
+        partes = texto.split("```")
+        # Tomar el contenido dentro del primer bloque
+        if len(partes) >= 2:
+            texto = partes[1]
+            if texto.startswith("json"):
+                texto = texto[4:]
+            texto = texto.strip()
 
     resultado = json.loads(texto)
 
@@ -254,7 +281,6 @@ def limpiar_destacadas():
         "Content-Type": "application/json"
     }
 
-    # Buscar páginas con Destacada = true
     payload = {
         "filter": {"property": "Destacada", "checkbox": {"equals": True}}
     }
@@ -285,7 +311,6 @@ def cargar_en_notion(nota, turno="manual"):
     if not NOTION_TOKEN:
         raise ValueError("Falta la variable de entorno NOTION_TOKEN")
 
-    etiqueta       = TURNO_CONFIG[turno]["etiqueta"]
     titulo_completo = nota["titulo"]
 
     headers = {
@@ -350,7 +375,6 @@ def main():
     print(f"{'='*50}\n")
 
     try:
-        # Limpiar destacadas anteriores antes de cargar las nuevas
         limpiar_destacadas()
 
         notas = buscar_y_redactar(tema=args.tema, turno=turno)
@@ -361,7 +385,7 @@ def main():
             cargar_en_notion(nota, turno=turno)
             print()
 
-        print(f"✨ Listo. Revisá los borradores en Notion y aprobá los que quieras publicar.")
+        print(f"✨ Listo. Revisá los borradores en Notion.")
         print(f"   https://www.notion.so/{NOTION_DB_ID}\n")
 
     except json.JSONDecodeError as e:
