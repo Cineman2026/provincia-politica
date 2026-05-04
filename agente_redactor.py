@@ -300,6 +300,8 @@ def cargar_en_notion(nota, turno="manual"):
         json=payload,
         timeout=30
     )
+    if not response.ok:
+        print(f"  \u274c Notion error {response.status_code}: {response.text}")
     response.raise_for_status()
     result = response.json()
     
