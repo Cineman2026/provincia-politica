@@ -1,5 +1,5 @@
 """
-AGENTE REDACTOR — PROVINCIA POLÍTICA v1.3
+AGENTE REDACTOR — PROVINCIA POLÍTICA v1.4
 ==========================================
 Busca noticias políticas bonaerenses, las redacta con voz editorial
 de Provincia Política y las carga en Notion como borradores.
@@ -103,64 +103,8 @@ def detectar_turno():
         return "tarde"
 
 
-def extraer_texto_respuesta(content):
-    """Extrae todo el texto de los bloques de contenido de la API."""
-    texto = ""
-    for block in content:
-        tipo = block.get("type", "")
-        if tipo == "text":
-            texto += block.get("text", "")
-        elif tipo == "tool_result":
-            # Para web_search server-side, el resultado puede venir aquí
-            inner = block.get("content", [])
-            if isinstance(inner, list):
-                for inner_block in inner:
-                    if inner_block.get("type") == "text":
-                        texto += inner_block.get("text", "")
-            elif isinstance(inner, str):
-                texto += inner
-    return texto
-
-
-def llamar_api(messages, tools=None):
-    """Realiza una llamada a la API de Anthropic y devuelve la data JSON."""
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "web-search-2025-03-05"
-    }
-
-    payload = {
-        "model": "claude-opus-4-5",
-        "max_tokens": 8000,
-        "system": SYSTEM_PROMPT,
-        "messages": messages
-    }
-
-    if tools:
-        payload["tools"] = tools
-
-    response = requests.post(
-        "https://api.anthropic.com/v1/messages",
-        headers=headers,
-        json=payload,
-        timeout=120
-    )
-
-    # Loguear status y respuesta para debug
-    print(f"   [API] status={response.status_code}")
-    if not response.ok:
-        print(f"   [API] error body: {response.text[:500]}")
-        response.raise_for_status()
-
-    data = response.json()
-    print(f"   [API] stop_reason={data.get('stop_reason')} blocks={[b.get('type') for b in data.get('content', [])]}")
-    return data
-
-
 def buscar_y_redactar(tema=None, turno="manual"):
-    """Llama a la API de Claude para buscar noticias y redactar."""
+    """Llama a la API de Claude para redactar noticias políticas bonaerenses."""
 
     if not ANTHROPIC_API_KEY:
         raise ValueError("Falta la variable de entorno ANTHROPIC_API_KEY")
@@ -173,17 +117,17 @@ def buscar_y_redactar(tema=None, turno="manual"):
 
 TEMA: {tema}
 
-Usá tu conocimiento sobre política bonaerense y la información disponible para redactar la nota.
+Buscá información actualizada en: {', '.join(FUENTES)}
 
 Elegí el registro correcto (R1/R2/R3) según el tipo de noticia y redactá la nota completa.
 Marcá "destacada": true si es la nota más importante, false si no.
 Respondé SOLO con el JSON, sin texto adicional."""
     else:
-        user_prompt = f"""Redactá {cantidad} notas sobre las noticias más relevantes de política bonaerense de HOY ({datetime.now().strftime('%d/%m/%Y')}).
+        user_prompt = f"""Buscá las {cantidad} noticias más relevantes sobre política bonaerense de HOY ({datetime.now().strftime('%d/%m/%Y')}) en estas fuentes: {', '.join(FUENTES)}
 
-Priorizá temas sobre: Kicillof y el Ejecutivo provincial, Legislatura bonaerense, internas del PJ, municipios del Conurbano, oposición en territorio bonaerense.
+Priorizá noticias sobre: Kicillof y el Ejecutivo provincial, Legislatura bonaerense, internas del PJ, municipios del Conurbano, oposición en territorio bonaerense.
 
-Para CADA nota, elegí el registro correcto (R1/R2/R3).
+Para CADA noticia, redactá la nota completa eligiendo el registro correcto (R1/R2/R3).
 
 Marcá "destacada": true SOLO en la nota más importante de esta tanda. El resto llevan "destacada": false.
 
@@ -201,65 +145,52 @@ Respondé con un array JSON de {cantidad} notas, cada una con el formato exacto:
 
 Respondé SOLO con el JSON, sin texto adicional."""
 
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01"
+    }
+
+    payload = {
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 4000,
+        "system": SYSTEM_PROMPT,
+        "messages": [{"role": "user", "content": user_prompt}]
+    }
+
     print(f"🔍 Buscando noticias ({turno})...")
+    response = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers=headers,
+        json=payload,
+        timeout=120
+    )
 
-    # Intentar primero con web_search (server-side tool)
-    tools = [{"type": "web_search_20250305", "name": "web_search"}]
-    messages = [{"role": "user", "content": user_prompt}]
+    # Loguear error detallado si falla
+    if not response.ok:
+        try:
+            err_data = response.json()
+            err_msg = err_data.get("error", {}).get("message", response.text)
+            print(f"❌ Error Anthropic API: {err_msg}")
+        except Exception:
+            print(f"❌ Respuesta de error: {response.text}")
+        response.raise_for_status()
 
+    data = response.json()
+
+    # Extraer texto de la respuesta
     texto = ""
-    try:
-        data = llamar_api(messages, tools=tools)
-        stop_reason = data.get("stop_reason", "")
-        content = data.get("content", [])
-
-        if stop_reason == "end_turn":
-            texto = extraer_texto_respuesta(content)
-        elif stop_reason == "tool_use":
-            # Si la API pide ejecutar tool_use manualmente (no debería con web_search server-side)
-            # Continuar el ciclo
-            messages.append({"role": "assistant", "content": content})
-            tool_results = []
-            for block in content:
-                if block.get("type") == "tool_use":
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.get("id"),
-                        "content": "No se pudo ejecutar la búsqueda web."
-                    })
-            if tool_results:
-                messages.append({"role": "user", "content": tool_results})
-                data2 = llamar_api(messages, tools=tools)
-                texto = extraer_texto_respuesta(data2.get("content", []))
-
-        print(f"   [DEBUG] texto extraído (primeros 200 chars): {repr(texto[:200])}")
-
-    except requests.HTTPError as e:
-        print(f"   [WARN] web_search falló con HTTP error: {e}. Intentando sin tools...")
-        texto = ""
-
-    # Si no obtuvimos texto, intentar sin herramienta web_search
-    if not texto.strip():
-        print("   [WARN] Sin texto con web_search. Reintentando sin tools...")
-        messages_simple = [{"role": "user", "content": user_prompt}]
-        data_simple = llamar_api(messages_simple, tools=None)
-        texto = extraer_texto_respuesta(data_simple.get("content", []))
-        print(f"   [DEBUG] texto sin tools (primeros 200 chars): {repr(texto[:200])}")
-
-    if not texto.strip():
-        raise ValueError("La API no devolvió texto en ningún intento")
+    for block in data.get("content", []):
+        if block.get("type") == "text":
+            texto += block.get("text", "")
 
     # Parsear JSON
     texto = texto.strip()
-    # Remover bloques de código markdown si los hay
-    if "```" in texto:
-        partes = texto.split("```")
-        # Tomar el contenido dentro del primer bloque
-        if len(partes) >= 2:
-            texto = partes[1]
-            if texto.startswith("json"):
-                texto = texto[4:]
-            texto = texto.strip()
+    if texto.startswith("```"):
+        texto = texto.split("```")[1]
+        if texto.startswith("json"):
+            texto = texto[4:]
+        texto = texto.strip()
 
     resultado = json.loads(texto)
 
