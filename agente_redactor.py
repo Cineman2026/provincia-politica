@@ -1,5 +1,5 @@
 """
-AGENTE REDACTOR — PROVINCIA POLÍTICA v1.4
+AGENTE REDACTOR — PROVINCIA POLÍTICA v1.1
 ==========================================
 Busca noticias políticas bonaerenses, las redacta con voz editorial
 de Provincia Política y las carga en Notion como borradores.
@@ -32,10 +32,10 @@ FUENTES = [
 ]
 
 TURNO_CONFIG = {
-    "manana":   {"cantidad": 3, "etiqueta": "🌅 Mañana"},
+    "manana": {"cantidad": 3, "etiqueta": "🌅 Mañana"},
     "mediodia": {"cantidad": 2, "etiqueta": "☀️ Mediodía"},
-    "tarde":    {"cantidad": 2, "etiqueta": "🌆 Tarde"},
-    "manual":   {"cantidad": 3, "etiqueta": "📝 Manual"},
+    "tarde": {"cantidad": 2, "etiqueta": "🌆 Tarde"},
+    "manual": {"cantidad": 3, "etiqueta": "📝 Manual"},
 }
 
 # ─── PROMPT DEL AGENTE ───────────────────────────────────────────────────────
@@ -79,6 +79,26 @@ CATEGORÍAS VÁLIDAS: Ejecutivo / Legislatura / Internas PJ / Conurbano / Oposic
 
 DESTACADA: En cada tanda, marcá exactamente UNA nota como "destacada": true — la más importante o de mayor impacto político del día. El resto llevan "destacada": false.
 
+CRITERIOS DE IMAGEN — buscar siempre una URL de imagen para cada nota:
+
+Fuentes permitidas (en orden de preferencia):
+1. Prensa oficial del gobierno provincial: prensa.gba.gob.ar, redes de ministerios, AGLP (Agencia Legislativa La Plata)
+2. Redes sociales oficiales de funcionarios públicos (cuentas verificadas de Kicillof, intendentes, bloques legislativos)
+3. Portales de noticias digitales: letrap.com.ar, latecla.info, infocielo.com, infobae.com, pagina12.com.ar
+4. Télam y agencias de noticias
+
+Reglas de selección:
+- Usar solo fotos donde el protagonista es una figura pública en ejercicio de su función (acto oficial, conferencia, sesión, marcha)
+- Preferir fotos recientes (2024-2026)
+- La URL debe terminar en .jpg, .jpeg, .png o .webp y cargar directamente en el navegador
+- No usar fotos de personas privadas aunque aparezcan en redes sociales
+- No usar fotos donde aparezcan menores
+- No usar fotos íntimas, médicas o de eventos privados
+- No usar URLs con espacios o caracteres especiales
+- No modificar ni omitir marcas de agua o créditos visibles en la imagen
+
+Si no encontrás una URL válida que cumpla todos los criterios, dejá el campo "imagen" como cadena vacía "".
+
 FORMATO DE SALIDA — siempre responder con este JSON exacto, sin texto adicional:
 {
   "registro": "R1|R2|R3",
@@ -86,6 +106,7 @@ FORMATO DE SALIDA — siempre responder con este JSON exacto, sin texto adiciona
   "titulo": "título de la nota",
   "copete": "copete de 2-3 líneas",
   "cuerpo": "cuerpo completo de la nota",
+  "imagen": "URL directa de la imagen o cadena vacía",
   "destacada": true|false
 }"""
 
@@ -104,12 +125,12 @@ def detectar_turno():
 
 
 def buscar_y_redactar(tema=None, turno="manual"):
-    """Llama a la API de Claude para redactar noticias políticas bonaerenses."""
+    """Llama a la API de Claude para buscar noticias y redactar."""
 
     if not ANTHROPIC_API_KEY:
         raise ValueError("Falta la variable de entorno ANTHROPIC_API_KEY")
 
-    config   = TURNO_CONFIG[turno]
+    config = TURNO_CONFIG[turno]
     cantidad = config["cantidad"]
 
     if tema:
@@ -152,8 +173,9 @@ Respondé SOLO con el JSON, sin texto adicional."""
     }
 
     payload = {
-        "model": "claude-sonnet-4-20250514",
+        "model": "claude-opus-4-6",
         "max_tokens": 4000,
+        "tools": [{"type": "web_search_20250305", "name": "web_search"}],
         "system": SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": user_prompt}]
     }
@@ -165,17 +187,7 @@ Respondé SOLO con el JSON, sin texto adicional."""
         json=payload,
         timeout=120
     )
-
-    # Loguear error detallado si falla
-    if not response.ok:
-        try:
-            err_data = response.json()
-            err_msg = err_data.get("error", {}).get("message", response.text)
-            print(f"❌ Error Anthropic API: {err_msg}")
-        except Exception:
-            print(f"❌ Respuesta de error: {response.text}")
-        response.raise_for_status()
-
+    response.raise_for_status()
     data = response.json()
 
     # Extraer texto de la respuesta
@@ -190,7 +202,7 @@ Respondé SOLO con el JSON, sin texto adicional."""
         texto = texto.split("```")[1]
         if texto.startswith("json"):
             texto = texto[4:]
-        texto = texto.strip()
+    texto = texto.strip()
 
     resultado = json.loads(texto)
 
@@ -212,6 +224,7 @@ def limpiar_destacadas():
         "Content-Type": "application/json"
     }
 
+    # Buscar páginas con Destacada = true
     payload = {
         "filter": {"property": "Destacada", "checkbox": {"equals": True}}
     }
@@ -222,7 +235,7 @@ def limpiar_destacadas():
         timeout=30
     )
     if not response.ok:
-        print("⚠️ No se pudieron limpiar destacadas anteriores")
+        print("⚠️  No se pudieron limpiar destacadas anteriores")
         return
 
     pages = response.json().get("results", [])
@@ -242,6 +255,7 @@ def cargar_en_notion(nota, turno="manual"):
     if not NOTION_TOKEN:
         raise ValueError("Falta la variable de entorno NOTION_TOKEN")
 
+    etiqueta = TURNO_CONFIG[turno]["etiqueta"]
     titulo_completo = nota["titulo"]
 
     headers = {
@@ -274,6 +288,11 @@ def cargar_en_notion(nota, turno="manual"):
         }
     }
 
+    # Agregar imagen solo si hay URL válida
+    imagen_url = nota.get("imagen", "").strip()
+    if imagen_url:
+        payload["properties"]["Imagen"] = {"url": imagen_url}
+
     response = requests.post(
         "https://api.notion.com/v1/pages",
         headers=headers,
@@ -283,8 +302,8 @@ def cargar_en_notion(nota, turno="manual"):
     response.raise_for_status()
     result = response.json()
 
-    page_url      = result.get("url", "")
-    destacada_str = "⭐" if nota.get("destacada") else " "
+    page_url = result.get("url", "")
+    destacada_str = "⭐" if nota.get("destacada") else "  "
     print(f"  ✅ {destacada_str} [{nota['registro']}] {titulo_completo[:60]}...")
     print(f"     Notion: {page_url}")
 
@@ -306,6 +325,7 @@ def main():
     print(f"{'='*50}\n")
 
     try:
+        # Limpiar destacadas anteriores antes de cargar las nuevas
         limpiar_destacadas()
 
         notas = buscar_y_redactar(tema=args.tema, turno=turno)
@@ -316,7 +336,7 @@ def main():
             cargar_en_notion(nota, turno=turno)
             print()
 
-        print(f"✨ Listo. Revisá los borradores en Notion.")
+        print(f"✨ Listo. Revisá los borradores en Notion y aprobá los que quieras publicar.")
         print(f"   https://www.notion.so/{NOTION_DB_ID}\n")
 
     except json.JSONDecodeError as e:
