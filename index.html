@@ -2126,11 +2126,9 @@ function getDefaultImg(id) {
 
 function formatFecha(iso) {
   const d = new Date(iso);
-  return d.toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).replace(/\./g, '').toUpperCase();
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${dias[d.getDay()]} ${d.getDate()} de ${meses[d.getMonth()]}`;
 }
 
 function timeAgo(iso) {
@@ -2372,7 +2370,7 @@ function renderPortada() {
       <h2 class="lead-title">${escHtml(featured.titulo)}</h2>
       <p class="lead-dek">${escHtml(featured.copete)}</p>
       <div class="lead-meta">
-        <span>${timeAgo(featured.fecha)}</span>
+        <span>${formatFecha(featured.fecha)} · ${timeAgo(featured.fecha)}</span>
         <span class="d"></span>
         <span>${escHtml(featured.plataforma || 'Redacción')}</span>
       </div>
@@ -2395,7 +2393,7 @@ function renderPortada() {
         <div class="lead-cat">${escHtml(sec.categoria)}</div>
         <h3 class="lead-title">${escHtml(sec.titulo)}</h3>
         <div class="lead-meta">
-          <span>${timeAgo(sec.fecha)}</span>
+          <span>${formatFecha(sec.fecha)} · ${timeAgo(sec.fecha)}</span>
           <span class="d"></span>
           <span>${escHtml(sec.plataforma || 'Redacción')}</span>
         </div>
@@ -2434,7 +2432,7 @@ function renderPortada() {
           <h3 class="feed-title">${escHtml(n.titulo)}</h3>
           <p class="feed-dek">${escHtml(n.copete)}</p>
           <div class="feed-meta">
-            <span>${timeAgo(n.fecha)}</span>
+            <span>${formatFecha(n.fecha)} · ${timeAgo(n.fecha)}</span>
             <span class="d"></span>
             <span>${escHtml(n.plataforma || 'Redacción')}</span>
           </div>
@@ -2628,7 +2626,8 @@ async function fetchFromNotion() {
         fecha: page.created_time,
         plataforma: 'Redacción'
       };
-    }).filter(n => n.titulo);
+    }).filter(n => n.titulo)
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
     if (noticias.length > 0) {
       // Save to localStorage and render
@@ -2697,3 +2696,4 @@ fetchFromNotion();
 
 </body>
 </html>
+
