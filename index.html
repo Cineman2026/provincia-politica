@@ -2126,9 +2126,10 @@ function getDefaultImg(id) {
 
 function formatFecha(iso) {
   const d = new Date(iso);
+  const local = new Date(d.toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
   const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  return `${dias[d.getDay()]} ${d.getDate()} de ${meses[d.getMonth()]}`;
+  return `${dias[local.getDay()]} ${local.getDate()} de ${meses[local.getMonth()]}`;
 }
 
 function timeAgo(iso) {
@@ -2306,10 +2307,10 @@ function saveNoticias(arr) {
 // ========================================
 
 function updateDate() {
-  const d = new Date();
+  const local = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
   const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  const dateStr = `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  const dateStr = `${days[local.getDay()]} ${local.getDate()} ${months[local.getMonth()]} ${local.getFullYear()}`;
   document.getElementById('date-today').textContent = dateStr;
 }
 
