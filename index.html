@@ -2092,10 +2092,89 @@
 </footer>
 
 <!-- ADMIN BUTTON -->
-<button id="admin-toggle" title="Administrar" style="opacity: 0.4;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.4'">⊕</button>
+<button id="admin-toggle" title="Administrar" style="opacity: 0.4;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.4'" onclick="toggleAdmin()">⊕</button>
 
 <!-- SCRIPTS -->
 <script>
+// ========================================
+// ADMIN AUTH & TOGGLE
+// ========================================
+const ADMIN_HASH = -1268244177; // hash de "olivia2026"
+
+function toggleAdmin() {
+  const panel = document.getElementById('admin-panel');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    return;
+  }
+  const input = prompt('Ingresá la clave de administrador:');
+  if (input === null) return;
+  if (hashCode(input) === ADMIN_HASH) {
+    panel.classList.add('open');
+    adminRenderList();
+  } else {
+    alert('Clave incorrecta.');
+  }
+}
+
+function adminRenderList() {
+  const list = document.getElementById('admin-list');
+  if (!list) return;
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) {}
+  if (stored.length === 0) {
+    list.innerHTML = '<p style="color:var(--ink-dim);font-size:0.9rem;">No hay noticias del administrador aún.</p>';
+    return;
+  }
+  list.innerHTML = stored.map(n => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--line);">
+      <span style="font-size:0.85rem;color:var(--ink);">${n.titulo.substring(0, 60)}…</span>
+      <button onclick="adminEliminar('${n.id}')" style="background:transparent;border:1px solid #555;color:#aaa;font-size:10px;padding:4px 10px;cursor:pointer;letter-spacing:0.1em;">ELIMINAR</button>
+    </div>
+  `).join('');
+}
+
+function adminEliminar(id) {
+  if (!confirm('¿Eliminar esta noticia?')) return;
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) {}
+  stored = stored.filter(n => n.id !== id);
+  saveNoticias(stored);
+  adminRenderList();
+  renderPortada();
+}
+
+function adminGuardar() {
+  const titulo   = document.getElementById('adm-titulo').value.trim();
+  const copete   = document.getElementById('adm-copete').value.trim();
+  const cuerpo   = document.getElementById('adm-cuerpo').value.trim();
+  const imagen   = document.getElementById('adm-imagen').value.trim();
+  const cat      = document.getElementById('adm-cat').value;
+  const featured = document.getElementById('adm-featured').checked;
+  if (!titulo || !copete) { alert('Completá al menos el título y el copete.'); return; }
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) {}
+  stored.unshift({
+    id: 'adm_' + Date.now(),
+    titulo, copete,
+    cuerpo: cuerpo || copete,
+    imagen,
+    categoria: cat,
+    fecha: new Date().toISOString(),
+    plataforma: 'Redacción',
+    featured
+  });
+  saveNoticias(stored);
+  document.getElementById('adm-titulo').value   = '';
+  document.getElementById('adm-copete').value   = '';
+  document.getElementById('adm-cuerpo').value   = '';
+  document.getElementById('adm-imagen').value   = '';
+  document.getElementById('adm-featured').checked = false;
+  alert('¡Noticia publicada!');
+  adminRenderList();
+  renderPortada();
+}
+
 // ========================================
 // STATE & STORAGE
 // ========================================
@@ -2668,7 +2747,10 @@ fetchFromNotion();
 
 <!-- ADMIN PANEL -->
 <div id="admin-panel">
-  <h3 style="font-family:var(--serif);font-size:1.4rem;margin-bottom:1.5rem;color:var(--ink)">Administrar noticias</h3>
+  <div class="admin-header">
+    <div class="admin-title">Administrar noticias</div>
+    <button class="admin-close" onclick="document.getElementById('admin-panel').classList.remove('open')">CERRAR</button>
+  </div>
   <div id="admin-list" style="margin-bottom:2rem"></div>
   <hr style="border-color:var(--line);margin-bottom:1.5rem">
   <h4 style="font-family:var(--mono);font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem">Nueva noticia</h4>
