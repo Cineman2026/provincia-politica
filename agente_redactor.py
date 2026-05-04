@@ -1,5 +1,5 @@
 """
-AGENTE REDACTOR — PROVINCIA POLÍTICA v1.1
+AGENTE REDACTOR — PROVINCIA POLÍTICA v1.2
 ==========================================
 Busca noticias políticas bonaerenses, las redacta con voz editorial
 de Provincia Política y las carga en Notion como borradores.
@@ -32,10 +32,10 @@ FUENTES = [
 ]
 
 TURNO_CONFIG = {
-    "manana": {"cantidad": 3, "etiqueta": "🌅 Mañana"},
+    "manana":   {"cantidad": 3, "etiqueta": "🌅 Mañana"},
     "mediodia": {"cantidad": 2, "etiqueta": "☀️ Mediodía"},
-    "tarde": {"cantidad": 2, "etiqueta": "🌆 Tarde"},
-    "manual": {"cantidad": 3, "etiqueta": "📝 Manual"},
+    "tarde":    {"cantidad": 2, "etiqueta": "🌆 Tarde"},
+    "manual":   {"cantidad": 3, "etiqueta": "📝 Manual"},
 }
 
 # ─── PROMPT DEL AGENTE ───────────────────────────────────────────────────────
@@ -104,12 +104,14 @@ def detectar_turno():
 
 
 def buscar_y_redactar(tema=None, turno="manual"):
-    """Llama a la API de Claude para buscar noticias y redactar."""
+    """Llama a la API de Claude para buscar noticias y redactar.
+    Maneja el ciclo completo de tool_use (web_search) hasta obtener el texto final.
+    """
 
     if not ANTHROPIC_API_KEY:
         raise ValueError("Falta la variable de entorno ANTHROPIC_API_KEY")
 
-    config = TURNO_CONFIG[turno]
+    config   = TURNO_CONFIG[turno]
     cantidad = config["cantidad"]
 
     if tema:
@@ -151,29 +153,78 @@ Respondé SOLO con el JSON, sin texto adicional."""
         "anthropic-version": "2023-06-01"
     }
 
-    payload = {
-        "model": "claude-opus-4-6",
-        "max_tokens": 4000,
-        "tools": [{"type": "web_search_20250305", "name": "web_search"}],
-        "system": SYSTEM_PROMPT,
-        "messages": [{"role": "user", "content": user_prompt}]
-    }
+    tools = [{"type": "web_search_20250305", "name": "web_search"}]
+
+    # Historial de mensajes para el ciclo agentic
+    messages = [{"role": "user", "content": user_prompt}]
 
     print(f"🔍 Buscando noticias ({turno})...")
-    response = requests.post(
-        "https://api.anthropic.com/v1/messages",
-        headers=headers,
-        json=payload,
-        timeout=120
-    )
-    response.raise_for_status()
-    data = response.json()
 
-    # Extraer texto de la respuesta
-    texto = ""
-    for block in data.get("content", []):
-        if block.get("type") == "text":
-            texto += block.get("text", "")
+    MAX_ITERACIONES = 10
+    for iteracion in range(MAX_ITERACIONES):
+        payload = {
+            "model": "claude-opus-4-5",
+            "max_tokens": 8000,
+            "tools": tools,
+            "system": SYSTEM_PROMPT,
+            "messages": messages
+        }
+
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers=headers,
+            json=payload,
+            timeout=120
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        stop_reason = data.get("stop_reason", "")
+        content     = data.get("content", [])
+
+        # Agregar la respuesta del asistente al historial
+        messages.append({"role": "assistant", "content": content})
+
+        if stop_reason == "end_turn":
+            # Extraer texto final
+            texto = ""
+            for block in content:
+                if block.get("type") == "text":
+                    texto += block.get("text", "")
+            break
+
+        elif stop_reason == "tool_use":
+            # Procesar cada tool_use y armar el tool_result
+            tool_results = []
+            for block in content:
+                if block.get("type") == "tool_use":
+                    tool_use_id = block.get("id")
+                    tool_name   = block.get("name")
+                    tool_input  = block.get("input", {})
+
+                    # web_search es manejado internamente por la API de Anthropic;
+                    # si llegamos aquí es porque la API lo procesa sola y nos
+                    # devuelve tool_result en el siguiente turn.
+                    # Simplemente reenviamos un resultado vacío para continuar.
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": tool_use_id,
+                        "content": ""
+                    })
+
+            messages.append({"role": "user", "content": tool_results})
+
+        else:
+            # stop_reason inesperado, intentar extraer texto de todos modos
+            texto = ""
+            for block in content:
+                if block.get("type") == "text":
+                    texto += block.get("text", "")
+            if texto:
+                break
+            raise ValueError(f"Stop reason inesperado: {stop_reason}, sin texto en la respuesta")
+    else:
+        raise ValueError("Se alcanzó el máximo de iteraciones sin obtener respuesta final")
 
     # Parsear JSON
     texto = texto.strip()
@@ -181,7 +232,7 @@ Respondé SOLO con el JSON, sin texto adicional."""
         texto = texto.split("```")[1]
         if texto.startswith("json"):
             texto = texto[4:]
-    texto = texto.strip()
+        texto = texto.strip()
 
     resultado = json.loads(texto)
 
@@ -214,7 +265,7 @@ def limpiar_destacadas():
         timeout=30
     )
     if not response.ok:
-        print("⚠️  No se pudieron limpiar destacadas anteriores")
+        print("⚠️ No se pudieron limpiar destacadas anteriores")
         return
 
     pages = response.json().get("results", [])
@@ -234,7 +285,7 @@ def cargar_en_notion(nota, turno="manual"):
     if not NOTION_TOKEN:
         raise ValueError("Falta la variable de entorno NOTION_TOKEN")
 
-    etiqueta = TURNO_CONFIG[turno]["etiqueta"]
+    etiqueta       = TURNO_CONFIG[turno]["etiqueta"]
     titulo_completo = nota["titulo"]
 
     headers = {
@@ -276,8 +327,8 @@ def cargar_en_notion(nota, turno="manual"):
     response.raise_for_status()
     result = response.json()
 
-    page_url = result.get("url", "")
-    destacada_str = "⭐" if nota.get("destacada") else "  "
+    page_url      = result.get("url", "")
+    destacada_str = "⭐" if nota.get("destacada") else " "
     print(f"  ✅ {destacada_str} [{nota['registro']}] {titulo_completo[:60]}...")
     print(f"     Notion: {page_url}")
 
