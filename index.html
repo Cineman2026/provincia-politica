@@ -2716,7 +2716,7 @@ async function fetchFromNotion() {
         imagen: getUrl(props['Imagen']),
         categoria: getSelect(props['Categoría'] || props['Categoria']),
         featured: getCheck(props['Destacada']),
-        fecha: page.created_time,
+        fecha: props['Fecha de publicación']?.date?.start || page.created_time,
         plataforma: 'Redacción'
       };
     }).filter(n => n.titulo)
