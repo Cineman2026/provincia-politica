@@ -29,6 +29,7 @@ on:
 jobs:
   redactar:
     runs-on: ubuntu-latest
+        timeout-minutes: 20
     
     steps:
       - name: Checkout repositorio
