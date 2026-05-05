@@ -116,28 +116,28 @@ FORMATO DE SALIDA — siempre responder con este JSON exacto, sin texto adiciona
 # ─── FUNCIONES ───────────────────────────────────────────────────────────────
 
 def validar_url_imagen(url):
-        """Valida que la URL de imagen sea segura para enviar a Notion.
-            Retorna la URL limpia o cadena vacía si no es válida."""
-        if not url or not isinstance(url, str):
-                    return ""
-                url = url.strip()
+    """Valida que la URL de imagen sea segura para enviar a Notion.
+    Retorna la URL limpia o cadena vacía si no es válida."""
+    if not url or not isinstance(url, str):
+        return ""
+    url = url.strip()
     if not url:
-                return ""
-            # Debe comenzar con http:// o https://
-            if not url.startswith(("http://", "https://")):
-                        return ""
-                    # No debe tener espacios
-                    if " " in url:
-                                return ""
-                            # Debe terminar en extensión de imagen válida (ignorando query params)
-                            url_path = url.split("?")[0].split("#")[0].lower()
+        return ""
+    # Debe comenzar con http:// o https://
+    if not url.startswith(("http://", "https://")):
+        return ""
+    # No debe tener espacios
+    if " " in url:
+        return ""
+    # Debe terminar en extensión de imagen válida (ignorando query params)
+    url_path = url.split("?")[0].split("#")[0].lower()
     extensiones_validas = (".jpg", ".jpeg", ".png", ".webp", ".gif")
     if not any(url_path.endswith(ext) for ext in extensiones_validas):
-                return ""
-            # Verificar que no tenga caracteres especiales problemáticos
-            try:
-                        url.encode("ascii")
-except UnicodeEncodeError:
+        return ""
+    # Verificar que no tenga caracteres especiales problemáticos
+    try:
+        url.encode("ascii")
+    except UnicodeEncodeError:
         return ""
     return url
 
