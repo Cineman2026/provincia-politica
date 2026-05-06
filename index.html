@@ -2517,7 +2517,8 @@ function renderPortada() {
   }
 
   // FEED LIST (remaining articles)
-  const feedItems = rest.slice(2);
+  // Si no hay destacada, el lead-grid no consumio notas del feed -> mostrar todo.
+  const feedItems = featured ? rest.slice(2) : rest.slice(0);
   const visible = feedItems.slice(0, visibleCount);
 
   if (visible.length === 0) {
