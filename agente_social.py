@@ -274,13 +274,8 @@ def main():
                 publicar_en_buffer(posts["x"], BUFFER_TWITTER_ID)
                 print(f"  ✅ X: {posts['x'][:80]}...")
 
-            # Publicar en Instagram — solo si la nota tiene imagen
-            imagen_url = nota.get("imagen", "").strip()
-            if BUFFER_INSTAGRAM_ID and posts.get("instagram") and imagen_url:
-                publicar_en_buffer(posts["instagram"], BUFFER_INSTAGRAM_ID, media_url=imagen_url)
-                print(f"  ✅ Instagram: {posts['instagram'][:80]}...")
-            elif BUFFER_INSTAGRAM_ID and not imagen_url:
-                print(f"  ⏭️  Instagram: sin imagen, se saltea")
+            # Instagram deshabilitado temporalmente — requiere manejo de assets en GraphQL
+            print(f"  ⏭️  Instagram: pendiente de implementación de assets")
 
             # Marcar como publicada en redes
             marcar_como_publicada_en_redes(nota["id"])
