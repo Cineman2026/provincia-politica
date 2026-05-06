@@ -74,12 +74,15 @@ FORMATO DE SALIDA — responder SOLO con JSON puro, sin texto antes ni después,
 # ─── UTILIDADES ──────────────────────────────────────────────────────────────
 
 def post_with_retry(url, headers, payload, timeout=60, max_retries=3):
-    """POST con backoff exponencial para 429/5xx."""
+    """POST con backoff exponencial para 429/5xx. Envía body como UTF-8 bytes explícitamente."""
     delay = 2
     r = None
+    # Serializar a UTF-8 bytes para evitar errores de encoding latin-1 con caracteres unicode
+    body_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    headers = {**headers, "Content-Type": "application/json; charset=utf-8"}
     for intento in range(1, max_retries + 1):
         try:
-            r = requests.post(url, headers=headers, json=payload, timeout=timeout)
+            r = requests.post(url, headers=headers, data=body_bytes, timeout=timeout)
         except requests.RequestException as e:
             if intento == max_retries:
                 raise
