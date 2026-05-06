@@ -345,7 +345,11 @@ def main():
 
             except Exception as e:
                 errores += 1
-                print(f"  ❌ Falló esta nota: {e}\n")
+                import traceback
+                print(f"  ❌ Falló esta nota: {e}")
+                print(f"  TRACEBACK:")
+                traceback.print_exc()
+                print()
 
         print(f"✨ Listo. {publicadas} publicada(s), {errores} con error.")
 
