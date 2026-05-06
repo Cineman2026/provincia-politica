@@ -65,8 +65,9 @@ REGLAS GENERALES
 - Nunca usar "es importante destacar", "cabe mencionar", "sin lugar a dudas"
 - El tono de X es mas cortante; el de Instagram mas narrativo
 - Nunca mencionar que el contenido fue generado por IA
+- CRITICO: dentro de los textos NO uses comillas dobles ("). Si necesitas citar algo, usa comillas latinas «» o comillas simples ''. Las comillas dobles solo pueden aparecer como delimitadores del JSON.
 
-FORMATO DE SALIDA — responder SOLO con este JSON, sin texto adicional:
+FORMATO DE SALIDA — responder SOLO con este JSON valido (parseable con json.loads), sin texto adicional, sin fences markdown, y SIN comillas dobles dentro de los valores:
 {
   "x": "texto del post para X",
   "instagram": "texto del post para Instagram"
@@ -129,6 +130,26 @@ def _extraer_json(texto):
             return t[i:].strip()
     return t
 
+
+def _reparar_json_comillas(s):
+    """Heuristica simple: en strings tipo {"k": "v con \"interna\""},
+    Claude a veces devuelve {"k": "v con "interna""} sin escapar.
+    Buscamos pares clave: y escapamos cualquier comilla doble que aparezca
+    dentro del valor antes de la coma o llave de cierre.
+    """
+    import re
+    # Para cada par "clave": "valor..." (valor que puede contener comillas mal puestas),
+    # buscamos desde la comilla de apertura del valor hasta la comilla de cierre que
+    # va seguida de , o }. Las comillas intermedias las escapamos.
+    def fix_value(match):
+        prefix = match.group(1)  # "clave": "
+        body = match.group(2)    # contenido sin la comilla final
+        suffix = match.group(3)  # " seguido de , o }
+        # Escapar comillas dobles internas que no esten ya escapadas
+        fixed_body = re.sub(r'(?<!\\)"', '\\"', body)
+        return prefix + fixed_body + suffix
+    pattern = re.compile(r'("\w+"\s*:\s*")(.*?)("\s*[,}])', re.DOTALL)
+    return pattern.sub(fix_value, s)
 # ─── FUNCIONES NOTION ─────────────────────────────────────
 def _notion_headers():
     return {
@@ -235,9 +256,14 @@ Responde SOLO con el JSON."""
     json_str = _extraer_json(texto)
     try:
         return json.loads(json_str)
-    except json.JSONDecodeError:
-        print(f"    ❌ JSON invalido de Claude. Primeros 600 chars:\n{json_str[:600]}")
-        raise
+    except json.JSONDecodeError as e1:
+        # Fallback: intentar reparar comillas dobles internas no escapadas.
+        reparado = _reparar_json_comillas(json_str)
+        try:
+            return json.loads(reparado)
+        except json.JSONDecodeError as e2:
+            print(f"    ❌ JSON invalido de Claude. Original ({e1}); reparado ({e2}). Primeros 600 chars:\n{json_str[:600]}")
+            raise
 
 # ─── PUBLICACION EN BUFFER (REST API v1) ──────────────────────────
 def publicar_en_buffer(texto, profile_id):
