@@ -1,5 +1,5 @@
 """
-AGENTE SOCIAL — PROVINCIA POLÍTICA v1.1
+AGENTE SOCIAL — PROVINCIA POLÍTICA v1.2
 =========================================
 Lee las notas destacadas publicadas en Notion y genera contenido
 para X e Instagram, publicándolo via Buffer.
@@ -31,8 +31,9 @@ BUFFER_TWITTER_ID    = os.environ.get("BUFFER_X_CHANNEL_ID")
 # Modelo Anthropic (override con env var ANTHROPIC_MODEL si querés cambiarlo).
 ANTHROPIC_MODEL      = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
 
-# Endpoint oficial del API GraphQL de Buffer.
-BUFFER_GRAPHQL_URL   = "https://graph.buffer.com"
+# Endpoint del API GraphQL de Buffer.
+# Nota: Buffer responde con "Please use api.buffer.com" si se usa otro host.
+BUFFER_GRAPHQL_URL   = "https://api.buffer.com"
 
 # ─── SYSTEM PROMPT PARA GENERACIÓN DE POSTS ──────────────────────────────────
 SYSTEM_PROMPT_SOCIAL = """Sos el Agente Social de Provincia Política, una agencia de noticias política digital especializada en la Provincia de Buenos Aires.
@@ -97,6 +98,34 @@ def post_with_retry(url, headers, payload, timeout=30, max_retries=3, label=""):
             continue
         return r
     return r
+
+# ─── LIMPIEZA DE JSON DEVUELTO POR CLAUDE ────────────────────────────────────
+def _extraer_json(texto):
+    """Devuelve el primer objeto/array JSON encontrado en el texto, tolerando
+    fences markdown y texto antes/después."""
+    t = (texto or "").strip()
+    if not t:
+        return t
+
+    # Si viene con fences ```json ... ``` o ``` ... ```, agarrar el contenido entre fences.
+    if "```" in t:
+        partes = t.split("```")
+        for p in partes[1:]:
+            p = p.lstrip()
+            if p.startswith("json"):
+                p = p[4:].lstrip()
+            if p.startswith("{") or p.startswith("["):
+                # Recortar hasta el último ``` si existe
+                end = p.rfind("```")
+                if end != -1:
+                    p = p[:end]
+                return p.strip()
+
+    # Sin fences: buscar el primer { o [ y devolver desde ahí
+    for i, ch in enumerate(t):
+        if ch in "{[":
+            return t[i:].strip()
+    return t
 
 # ─── FUNCIONES NOTION ────────────────────────────────────────────────────────
 def _notion_headers():
@@ -206,16 +235,12 @@ Respondé SOLO con el JSON."""
         if block.get("type") == "text":
             texto += block.get("text", "")
 
-    texto = texto.strip()
-    if texto.startswith("```"):
-        partes = texto.split("```")
-        if len(partes) >= 2:
-            texto = partes[1]
-            if texto.startswith("json"):
-                texto = texto[4:]
-            texto = texto.strip()
-
-    return json.loads(texto)
+    json_str = _extraer_json(texto)
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        print(f"  ❌ JSON inválido de Claude. Primeros 600 chars:\n{json_str[:600]}")
+        raise
 
 # ─── PUBLICACIÓN EN BUFFER ───────────────────────────────────────────────────
 def publicar_en_buffer(texto, channel_id):
