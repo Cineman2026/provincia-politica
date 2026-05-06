@@ -14,7 +14,7 @@ import json
 import time
 import argparse
 import urllib.parse
-import requestsh
+import requests
 from datetime import datetime, timezone, timedelta
 
 # ─── CONFIGURACIÓN ───────────────────────────────────────────────────────────
