@@ -1,5 +1,5 @@
 """
-AGENTE REDACTOR — PROVINCIA POLÍTICA v1.3
+AGENTE REDACTOR — PROVINCIA POLÍTICA v1.4
 ==========================================
 Busca noticias políticas bonaerenses, las redacta con voz editorial
 de Provincia Política y las carga en Notion como borradores.
@@ -41,9 +41,9 @@ FUENTES = [
 ]
 
 TURNO_CONFIG = {
-    "manana":   {"cantidad": 3, "etiqueta": "🌅 Mañana"},
-    "mediodia": {"cantidad": 2, "etiqueta": "☀️ Mediodía"},
-    "tarde":    {"cantidad": 2, "etiqueta": "🌆 Tarde"},
+    "manana":   {"cantidad": 5, "etiqueta": "🌅 Mañana"},
+    "mediodia": {"cantidad": 3, "etiqueta": "☀️ Mediodía"},
+    "tarde":    {"cantidad": 3, "etiqueta": "🌆 Tarde"},
     "manual":   {"cantidad": 3, "etiqueta": "📝 Manual"},
 }
 
@@ -58,23 +58,40 @@ IDENTIDAD EDITORIAL
 ENFOQUE EDITORIAL — REGLA CLAVE
 Cuando el tema involucra a Kicillof o al gobierno provincial, el enfoque NO es crítico sino contextual. El peronismo bonaerense aparece como actor relevante, no como objeto de cuestionamiento.
 Ejemplo: si Kicillof no asiste a un acto, la nota no es "Kicillof faltó". La nota es "el Conurbano puso el cuerpo mientras la conducción sindical debatía su próximo paso".
-Cuando el tema involucra al Senado bonaerense o a Verónica Magario, el enfoque es contextual, no crítico. La gestión del Senado aparece como dato político, no como objeto de cuestionamiento. No señalar parálisis legislativa, demoras ni ausencias salvo directiva explícita del director editorial. Cuando Kicillof aparece como receptor de una situación (declaraciones de terceros, conflictos, presiones), el enfoque es neutro. No redactar frases que lo muestren superado, sorprendido o en posición débil. Ejemplo: no escribir "tuvo que leer en los portales" sino "la declaración llegó primero a los portales". Las interpretaciones sobre la relación Kicillof-Cristina o sobre las internas del PJ deben atribuirse siempre a fuentes ("desde el entorno de...", "según dirigentes del PJ", "la lectura en Gobernación es que..."). Nunca afirmarlas como hechos verificados. Las comillas se usan SOLO para citas textuales verificables y atribuidas explícitamente a una persona. No usar comillas para parafrasear, interpretar o resumir la posición de un dirigente. Si no es textual, va sin comillas y con verbo de atribución ("sostuvo", "advirtió", "señaló").
+
+Cuando el tema involucra al Senado bonaerense o a Verónica Magario, el enfoque es contextual, no crítico. La gestión del Senado aparece como dato político, no como objeto de cuestionamiento. No señalar parálisis legislativa, demoras ni ausencias salvo directiva explícita del director editorial.
+
+Cuando Kicillof aparece como receptor de una situación (declaraciones de terceros, conflictos, presiones), el enfoque es neutro. No redactar frases que lo muestren superado, sorprendido o en posición débil. Ejemplo: no escribir "tuvo que leer en los portales" sino "la declaración llegó primero a los portales".
+
+Las interpretaciones sobre la relación Kicillof-Cristina o sobre las internas del PJ deben atribuirse siempre a fuentes ("desde el entorno de...", "según dirigentes del PJ", "la lectura en Gobernación es que..."). Nunca afirmarlas como hechos verificados.
+
+Las comillas se usan SOLO para citas textuales verificables y atribuidas explícitamente a una persona. No usar comillas para parafrasear, interpretar o resumir la posición de un dirigente. Si no es textual, va sin comillas y con verbo de atribución ("sostuvo", "advirtió", "señaló").
+
+DISTRIBUCIÓN POR CATEGORÍAS — REGLA CLAVE
+Cuando se generan varias notas en una misma tanda, las notas DEBEN cubrir categorías DISTINTAS. No concentrar la cobertura en Ejecutivo. Distribuir activamente entre las 7 categorías disponibles: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora.
+Si en una tanda hay 3 notas, deben ser de 3 categorías distintas.
+Si hay 5 notas, deben ser de 5 categorías distintas.
+Excepción: solo se puede repetir categoría si no hay material relevante en otras categorías ese día, lo cual debe ser raro.
 
 LOS TRES REGISTROS — el agente elige el correcto según el tema:
+
 R1 — INFORMATIVO/INSTITUCIONAL
 Cuándo: declaraciones, anuncios, datos económicos, conferencias de prensa.
 Tono: directo, riguroso, datos al frente, ironía mínima.
-Apertura: cita textual seca o dato contundente. Cierre: proyección seca.
+Apertura: cita textual seca o dato contundente.
+Cierre: proyección seca.
 
 R2 — ANÁLISIS/CONTEXTO
 Cuándo: lectura política, escenarios, balance de poder, internas públicas.
 Tono: equilibrado, reconstrucción de escenas, citas off, proyección.
-Apertura: escena concreta. Cierre: pregunta abierta o escenario futuro.
+Apertura: escena concreta.
+Cierre: pregunta abierta o escenario futuro.
 
 R3 — ROSCA/TRASTIENDA
 Cuándo: internas de despacho, peleas de poder, jugadas no contadas, mensajes filtrados.
 Tono: irónico, elegante, frases memorables, escenas reconstruidas.
-Apertura: frase de impacto. Cierre: remate lapidario en una línea.
+Apertura: frase de impacto.
+Cierre: remate lapidario en una línea.
 
 REGLAS DE ESCRITURA
 - Título: máximo 12 palabras, sin verbo auxiliar, sin clickbait.
@@ -106,7 +123,6 @@ Si no encontrás una URL válida, dejá "imagen" como cadena vacía "".
 FORMATO DE SALIDA — SIEMPRE responder con JSON puro, sin texto antes ni después, sin fences markdown.
 - Para una sola nota: un objeto JSON.
 - Para varias notas: un array JSON.
-
 Cada nota tiene EXACTAMENTE estas claves:
 {
   "registro": "R1|R2|R3",
@@ -128,7 +144,6 @@ def detectar_turno():
         return "mediodia"
     else:
         return "tarde"
-
 
 def validar_url_imagen(url):
     """Valida y normaliza la URL de imagen para Notion. Devuelve la URL o ''."""
@@ -157,7 +172,6 @@ def validar_url_imagen(url):
         except Exception:
             return ""
 
-
 def chunk_rich_text(texto, limite=1900):
     """Divide texto en bloques rich_text de hasta limite chars (Notion exige <=2000)."""
     if not texto:
@@ -167,7 +181,6 @@ def chunk_rich_text(texto, limite=1900):
         bloques.append({"text": {"content": texto[:limite]}})
         texto = texto[limite:]
     return bloques
-
 
 def post_with_retry(url, headers, payload, timeout=120, max_retries=3):
     """POST con backoff exponencial para 429/5xx y errores de red."""
@@ -195,11 +208,9 @@ def post_with_retry(url, headers, payload, timeout=120, max_retries=3):
         return r
     return r
 
-
 # ─── ANTHROPIC ───────────────────────────────────────────────────────────────
 def _extraer_texto(content_blocks):
     return "".join(b.get("text", "") for b in content_blocks if b.get("type") == "text")
-
 
 def _limpiar_fences(texto):
     """Elimina fences markdown y texto antes/después del primer bloque JSON."""
@@ -216,7 +227,6 @@ def _limpiar_fences(texto):
         if ch in "{[":
             return t[i:].strip()
     return t
-
 
 def buscar_y_redactar(tema=None, turno="manual"):
     """Llama a la API de Claude para buscar noticias y redactar."""
@@ -236,32 +246,32 @@ Buscá información actualizada en: {', '.join(FUENTES)}
 Elegí el registro correcto (R1/R2/R3) y redactá la nota completa.
 Marcá "destacada": true si es la más importante, false si no.
 Incluí "imagen" siguiendo los criterios del system prompt.
-
 Respondé SOLO con un objeto JSON válido (sin fences, sin texto adicional)."""
     else:
-        user_prompt = f"""Buscá las {cantidad} noticias más relevantes sobre política bonaerense de HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) en estas fuentes: {', '.join(FUENTES)}
+        user_prompt = f"""Buscá las {cantidad} noticias más relevantes sobre política bonaerense de HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) en estas fuentes:
+{', '.join(FUENTES)}
 
-Priorizá: Kicillof y el Ejecutivo provincial, Legislatura bonaerense, internas del PJ, municipios del Conurbano, oposición.
+IMPORTANTE: Las {cantidad} notas DEBEN ser de categorías DISTINTAS para garantizar cobertura amplia. Distribuir entre: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora.
+No concentrar la cobertura en Ejecutivo — buscar activamente material en las otras categorías.
 
 Para CADA noticia, redactá la nota completa eligiendo R1/R2/R3.
 Marcá "destacada": true SOLO en una nota (la más importante de la tanda). El resto false.
 Incluí "imagen" en cada nota siguiendo los criterios del system prompt.
 
-Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves definidas (registro, categoria, titulo, copete, cuerpo, imagen, destacada). Sin fences, sin texto adicional."""
+Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves definidas
+(registro, categoria, titulo, copete, cuerpo, imagen, destacada). Sin fences, sin texto adicional."""
 
     headers = {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
     }
-
     payload = {
         "model": ANTHROPIC_MODEL,
         "max_tokens": 4096,
         "system": SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": user_prompt}],
     }
-
     if not DISABLE_WEB_SEARCH:
         payload["tools"] = [{
             "type": "web_search_20250305",
@@ -271,7 +281,6 @@ Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves defin
 
     print(f"🔍 Buscando noticias ({turno}) con modelo {ANTHROPIC_MODEL}"
           f"{' [sin web_search]' if DISABLE_WEB_SEARCH else ''}...")
-
     r = post_with_retry("https://api.anthropic.com/v1/messages",
                         headers=headers, payload=payload, timeout=180)
 
@@ -281,7 +290,6 @@ Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves defin
             print(f"   body: {r.text[:2000]}")
         except Exception:
             pass
-        # Fallback: si web_search no está habilitada, reintentar sin tools
         if not DISABLE_WEB_SEARCH and "tool" in r.text.lower():
             print("   Reintentando sin web_search...")
             payload.pop("tools", None)
@@ -289,12 +297,11 @@ Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves defin
                                 headers=headers, payload=payload, timeout=180)
             if r.status_code >= 400:
                 print(f"   body 2: {r.text[:2000]}")
-        r.raise_for_status()
 
+    r.raise_for_status()
     data = r.json()
     content = data.get("content", [])
     tipos = [b.get("type") for b in content]
-
     if "tool_use" in tipos and "text" not in tipos:
         print(f"⚠️ Claude devolvió tool_use sin texto final. stop_reason={data.get('stop_reason')}")
 
@@ -315,7 +322,6 @@ Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves defin
         resultado = [resultado]
     return resultado
 
-
 # ─── NOTION ──────────────────────────────────────────────────────────────────
 def _notion_headers():
     return {
@@ -323,7 +329,6 @@ def _notion_headers():
         "Notion-Version": "2022-06-28",
         "Content-Type": "application/json",
     }
-
 
 def limpiar_destacadas():
     """Desmarca todas las páginas con Destacada=true. Pagina y tolera errores."""
@@ -359,13 +364,12 @@ def limpiar_destacadas():
                     timeout=15)
                 total += 1
             except requests.RequestException as e:
-                print(f"   ⚠️ Error desmarcando {page.get('id')}: {e}")
+                print(f"  ⚠️ Error desmarcando {page.get('id')}: {e}")
         if not data.get("has_more"):
             break
         cursor = data.get("next_cursor")
     if total:
         print(f"🧹 {total} destacada(s) anterior(es) limpiada(s)")
-
 
 def cargar_en_notion(nota, turno="manual"):
     """Carga una nota en Notion como borrador."""
@@ -377,18 +381,17 @@ def cargar_en_notion(nota, turno="manual"):
     cuerpo = nota.get("cuerpo") or ""
     categoria = nota.get("categoria") or "Última hora"
     destacada = bool(nota.get("destacada", False))
-
     ahora = datetime.now(TZ_ARG).strftime("%Y-%m-%dT%H:%M:%S-03:00")
 
     payload = {
         "parent": {"database_id": NOTION_DB_ID},
         "properties": {
-            "Nombre":               {"title": [{"text": {"content": titulo[:1900]}}]},
-            "Copete":               {"rich_text": chunk_rich_text(copete)},
-            "Cuerpo":               {"rich_text": chunk_rich_text(cuerpo)},
-            "Categoría":            {"select": {"name": categoria}},
-            "Estado":               {"select": {"name": "Borrador"}},
-            "Destacada":            {"checkbox": destacada},
+            "Nombre": {"title": [{"text": {"content": titulo[:1900]}}]},
+            "Copete": {"rich_text": chunk_rich_text(copete)},
+            "Cuerpo": {"rich_text": chunk_rich_text(cuerpo)},
+            "Categoría": {"select": {"name": categoria}},
+            "Estado": {"select": {"name": "Borrador"}},
+            "Destacada": {"checkbox": destacada},
             "Fecha de publicación": {"date": {"start": ahora}},
         },
     }
@@ -400,24 +403,22 @@ def cargar_en_notion(nota, turno="manual"):
     r = post_with_retry("https://api.notion.com/v1/pages",
                         headers=_notion_headers(), payload=payload, timeout=30)
     if r.status_code >= 400:
-        print(f"   ❌ Notion HTTP {r.status_code}: {r.text[:1000]}")
+        print(f"  ❌ Notion HTTP {r.status_code}: {r.text[:1000]}")
         r.raise_for_status()
 
     result = r.json()
     page_url = result.get("url", "")
     star = "⭐" if destacada else "  "
     registro = nota.get("registro", "?")
-    print(f" ✅ {star} [{registro}] {titulo[:60]}")
+    print(f"  ✅ {star} [{registro}] {titulo[:60]}")
     if page_url:
         print(f"     {page_url}")
     return result
 
-
 # ─── MAIN ────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="Agente Redactor — Provincia Política")
-    parser.add_argument("--tema", type=str, default=None,
-                        help="Tema específico para redactar")
+    parser.add_argument("--tema", type=str, default=None, help="Tema específico para redactar")
     parser.add_argument("--turno", type=str, default=None,
                         choices=["manana", "mediodia", "tarde", "manual"],
                         help="Turno del día")
@@ -426,13 +427,12 @@ def main():
     turno = args.turno or ("manual" if args.tema else detectar_turno())
 
     print(f"\n{'='*52}")
-    print(f" PROVINCIA POLÍTICA — Agente Redactor")
-    print(f" {datetime.now(TZ_ARG).strftime('%d/%m/%Y %H:%M')} ARG — {TURNO_CONFIG[turno]['etiqueta']}")
+    print(f"  PROVINCIA POLÍTICA — Agente Redactor")
+    print(f"  {datetime.now(TZ_ARG).strftime('%d/%m/%Y %H:%M')} ARG — {TURNO_CONFIG[turno]['etiqueta']}")
     print(f"{'='*52}\n")
 
     errores = 0
     cargadas = 0
-
     try:
         limpiar_destacadas()
         notas = buscar_y_redactar(tema=args.tema, turno=turno)
@@ -444,10 +444,12 @@ def main():
                 cargadas += 1
             except Exception as e:
                 errores += 1
-                print(f"   ❌ Falló esta nota: {e}")
+                print(f"  ❌ Falló esta nota: {e}")
             print()
+
         print(f"✨ Listo. {cargadas} cargada(s), {errores} con error.")
         print(f"   https://www.notion.so/{NOTION_DB_ID}\n")
+
         if cargadas == 0 and errores > 0:
             sys.exit(1)
     except json.JSONDecodeError as e:
@@ -459,7 +461,6 @@ def main():
     except Exception as e:
         print(f"❌ Error inesperado: {e}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
