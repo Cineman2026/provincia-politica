@@ -37,7 +37,7 @@ ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
 BUFFER_REST_URL = "https://api.bufferapp.com/1/updates/create.json"
 
 # ─── SYSTEM PROMPT PARA GENERACION DE POSTS ────────────────────────
-SYSTEM_PROMPT_SOCIAL = ```Sos el Agente Social de Provincia Politica, una agencia de noticias politica digital especializada en la Provincia de Buenos Aires.
+SYSTEM_PROMPT_SOCIAL = """Sos el Agente Social de Provincia Politica, una agencia de noticias politica digital especializada en la Provincia de Buenos Aires.
 Tu tarea es generar posts para X (Twitter) e Instagram a partir de notas periodisticas.
 
 IDENTIDAD EDITORIAL
@@ -70,7 +70,7 @@ FORMATO DE SALIDA — responder SOLO con este JSON, sin texto adicional:
 {
   "x": "texto del post para X",
   "instagram": "texto del post para Instagram"
-}```
+}"""
 
 # ─── HTTP CON RETRY/BACKOFF ────────────────────────────────
 def post_with_retry(url, headers=None, payload=None, data=None, timeout=30, max_retries=3, label=""):
