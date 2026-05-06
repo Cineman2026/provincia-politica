@@ -2444,10 +2444,10 @@ function renderPortada() {
   }
 
   // Find featured or use first
-  let featured = noticias.find(n => n.featured);
-  if (!featured) featured = noticias[0];
-
-  const rest = noticias.filter(n => n !== featured);
+  const destacadas = noticias.filter(n => n.featured);
+  const rest = noticias.filter(n => !n.featured);
+  let featured = destacadas[0] || null;
+  const otrasDestacadas = destacadas.slice(1);
 
   // FEATURED ARTICLE (big)
   const bigArticle = document.createElement('article');
@@ -2472,7 +2472,7 @@ function renderPortada() {
   leadGrid.appendChild(bigArticle);
 
   // SECONDARY ARTICLES (2)
-  const secondaries = rest.slice(0, 2);
+  const secondaries = otrasDestacadas.slice(0, 2);
   for (const sec of secondaries) {
     const medArticle = document.createElement('article');
     medArticle.className = 'lead-med';
