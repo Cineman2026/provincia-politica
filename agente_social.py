@@ -79,7 +79,17 @@ def post_with_retry(url, headers, payload, timeout=60, max_retries=3):
     r = None
     # Serializar a UTF-8 bytes para evitar errores de encoding latin-1 con caracteres unicode
     body_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    headers = {**headers, "Content-Type": "application/json; charset=utf-8"}
+    # Limpiar headers a ASCII puro (HTTP/1.1 no permite unicode en headers)
+    headers_clean = {}
+    for k, v in headers.items():
+        v_str = str(v)
+        try:
+            v_str.encode("ascii")
+            headers_clean[k] = v_str
+        except UnicodeEncodeError:
+            print(f"  ⚠️  Header '{k}' tiene caracteres no-ASCII, sanitizando...")
+            headers_clean[k] = v_str.encode("ascii", "ignore").decode("ascii").strip()
+    headers = {**headers_clean, "Content-Type": "application/json; charset=utf-8"}
     for intento in range(1, max_retries + 1):
         try:
             r = requests.post(url, headers=headers, data=body_bytes, timeout=timeout)
