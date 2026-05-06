@@ -1,5 +1,5 @@
 """
-AGENTE SOCIAL — PROVINCIA POLÍTICA v1.0
+AGENTE SOCIAL — PROVINCIA POLÍTICA v1.1
 =========================================
 Lee las notas destacadas publicadas en Notion y genera contenido
 para X e Instagram, publicándolo via Buffer.
@@ -16,20 +16,25 @@ Uso manual: python agente_social.py
 import os
 import sys
 import json
+import time
 import requests
 from datetime import datetime, timezone, timedelta
 
 # ─── CONFIGURACIÓN ───────────────────────────────────────────────────────────
+ANTHROPIC_API_KEY    = os.environ.get("ANTHROPIC_API_KEY")
+NOTION_TOKEN         = os.environ.get("NOTION_TOKEN")
+NOTION_DB_ID         = os.environ.get("NOTION_DB_ID", "352e199864dd80e1af24f0b661dbd896")
+BUFFER_TOKEN         = os.environ.get("BUFFER_TOKEN")
+BUFFER_INSTAGRAM_ID  = os.environ.get("BUFFER_INSTAGRAM_CHANNEL_ID")
+BUFFER_TWITTER_ID    = os.environ.get("BUFFER_X_CHANNEL_ID")
 
-ANTHROPIC_API_KEY     = os.environ.get("ANTHROPIC_API_KEY")
-NOTION_TOKEN          = os.environ.get("NOTION_TOKEN")
-NOTION_DB_ID          = os.environ.get("NOTION_DB_ID", "352e199864dd80e1af24f0b661dbd896")
-BUFFER_TOKEN          = os.environ.get("BUFFER_TOKEN")
-BUFFER_INSTAGRAM_ID   = os.environ.get("BUFFER_INSTAGRAM_CHANNEL_ID")
-BUFFER_TWITTER_ID     = os.environ.get("BUFFER_X_CHANNEL_ID")
+# Modelo Anthropic (override con env var ANTHROPIC_MODEL si querés cambiarlo).
+ANTHROPIC_MODEL      = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+
+# Endpoint oficial del API GraphQL de Buffer.
+BUFFER_GRAPHQL_URL   = "https://graph.buffer.com"
 
 # ─── SYSTEM PROMPT PARA GENERACIÓN DE POSTS ──────────────────────────────────
-
 SYSTEM_PROMPT_SOCIAL = """Sos el Agente Social de Provincia Política, una agencia de noticias política digital especializada en la Provincia de Buenos Aires.
 
 Tu tarea es generar posts para X (Twitter) e Instagram a partir de notas periodísticas.
@@ -66,53 +71,76 @@ FORMATO DE SALIDA — responder SOLO con este JSON, sin texto adicional:
   "instagram": "texto del post para Instagram"
 }"""
 
-# ─── FUNCIONES NOTION ────────────────────────────────────────────────────────
+# ─── HTTP CON RETRY/BACKOFF ──────────────────────────────────────────────────
+def post_with_retry(url, headers, payload, timeout=30, max_retries=3, label=""):
+    """POST con backoff exponencial para 429/5xx y errores de red."""
+    delay = 2
+    r = None
+    for intento in range(1, max_retries + 1):
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        except requests.RequestException as e:
+            if intento == max_retries:
+                raise
+            print(f"  ⏳ {label} error de red ({e}); reintento {intento}/{max_retries} en {delay}s")
+            time.sleep(delay)
+            delay *= 2
+            continue
+        if r.status_code in (429, 500, 502, 503, 504) and intento < max_retries:
+            print(f"  ⏳ {label} HTTP {r.status_code}; reintento {intento}/{max_retries} en {delay}s")
+            try:
+                print(f"     body: {r.text[:500]}")
+            except Exception:
+                pass
+            time.sleep(delay)
+            delay *= 2
+            continue
+        return r
+    return r
 
-def obtener_notas_para_publicar():
-    """Obtiene notas con Estado=Publicada, Destacada=true y EnRedes=false."""
-    headers = {
+# ─── FUNCIONES NOTION ────────────────────────────────────────────────────────
+def _notion_headers():
+    return {
         "Authorization": f"Bearer {NOTION_TOKEN}",
         "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
+def obtener_notas_para_publicar():
+    """Obtiene notas con Estado=Publicada, Destacada=true y En Redes=false."""
     payload = {
         "filter": {
             "and": [
-                {"property": "Estado", "select": {"equals": "Publicada"}},
+                {"property": "Estado",    "select":   {"equals": "Publicada"}},
                 {"property": "Destacada", "checkbox": {"equals": True}},
-                {"property": "En Redes", "checkbox": {"equals": False}}
+                {"property": "En Redes",  "checkbox": {"equals": False}},
             ]
         },
-        "sorts": [{"property": "Fecha de publicación", "direction": "descending"}]
+        "sorts": [{"property": "Fecha de publicación", "direction": "descending"}],
     }
-
-    response = requests.post(
+    r = post_with_retry(
         f"https://api.notion.com/v1/databases/{NOTION_DB_ID}/query",
-        headers=headers,
-        json=payload,
-        timeout=30
+        headers=_notion_headers(),
+        payload=payload,
+        timeout=30,
+        label="Notion query",
     )
-    response.raise_for_status()
-    return response.json().get("results", [])
-
+    if r.status_code >= 400:
+        print(f"❌ Notion query HTTP {r.status_code}: {r.text[:1000]}")
+        r.raise_for_status()
+    return r.json().get("results", [])
 
 def marcar_como_publicada_en_redes(page_id):
     """Marca la nota con En Redes = true en Notion."""
-    headers = {
-        "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
-    }
-
-    response = requests.patch(
+    r = requests.patch(
         f"https://api.notion.com/v1/pages/{page_id}",
-        headers=headers,
+        headers=_notion_headers(),
         json={"properties": {"En Redes": {"checkbox": True}}},
-        timeout=15
+        timeout=15,
     )
-    response.raise_for_status()
-
+    if r.status_code >= 400:
+        print(f"  ⚠️ Notion patch HTTP {r.status_code}: {r.text[:500]}")
+        r.raise_for_status()
 
 def extraer_datos_nota(page):
     """Extrae los campos relevantes de una página de Notion."""
@@ -137,7 +165,6 @@ def extraer_datos_nota(page):
     }
 
 # ─── GENERACIÓN DE POSTS CON CLAUDE ──────────────────────────────────────────
-
 def generar_posts(nota):
     """Llama a Claude para generar los posts de X e Instagram."""
     if not ANTHROPIC_API_KEY:
@@ -155,25 +182,25 @@ Respondé SOLO con el JSON."""
     headers = {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
     }
-
     payload = {
-        "model": "claude-sonnet-4-6",
+        "model": ANTHROPIC_MODEL,
         "max_tokens": 1000,
         "system": SYSTEM_PROMPT_SOCIAL,
-        "messages": [{"role": "user", "content": user_prompt}]
+        "messages": [{"role": "user", "content": user_prompt}],
     }
 
-    response = requests.post(
+    r = post_with_retry(
         "https://api.anthropic.com/v1/messages",
-        headers=headers,
-        json=payload,
-        timeout=60
+        headers=headers, payload=payload, timeout=60,
+        label="Anthropic",
     )
-    response.raise_for_status()
-    data = response.json()
+    if r.status_code >= 400:
+        print(f"  ❌ Anthropic HTTP {r.status_code}: {r.text[:1000]}")
+        r.raise_for_status()
 
+    data = r.json()
     texto = ""
     for block in data.get("content", []):
         if block.get("type") == "text":
@@ -181,70 +208,75 @@ Respondé SOLO con el JSON."""
 
     texto = texto.strip()
     if texto.startswith("```"):
-        texto = texto.split("```")[1]
-        if texto.startswith("json"):
-            texto = texto[4:]
-    texto = texto.strip()
+        partes = texto.split("```")
+        if len(partes) >= 2:
+            texto = partes[1]
+            if texto.startswith("json"):
+                texto = texto[4:]
+            texto = texto.strip()
 
     return json.loads(texto)
 
-# ─── PUBLICACIÓN EN BUFFER ────────────────────────────────────────────────────
-
-def publicar_en_buffer(texto, channel_id, media_url=None):
-    """Envía un post a Buffer via API GraphQL."""
+# ─── PUBLICACIÓN EN BUFFER ───────────────────────────────────────────────────
+def publicar_en_buffer(texto, channel_id):
+    """Envía un post a Buffer via API GraphQL usando variables (no interpolación)."""
     if not BUFFER_TOKEN:
         raise ValueError("Falta BUFFER_TOKEN")
 
     headers = {
         "Authorization": f"Bearer {BUFFER_TOKEN}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
-    mutation = """
-    mutation CreatePost {
-      createPost(input: {
-        text: "%s",
-        channelId: "%s",
-        schedulingType: automatic,
-        mode: addToQueue
-      }) {
+    query = """
+    mutation CreatePost($input: PostCreateInput!) {
+      createPost(input: $input) {
         ... on PostActionSuccess {
-          post {
-            id
-            text
-            dueAt
-          }
+          post { id text dueAt }
         }
         ... on MutationError {
           message
         }
       }
     }
-    """ % (texto.replace('"', '\"').replace('\n', '\\n'), channel_id)
+    """
 
-    payload = {"query": mutation}
+    variables = {
+        "input": {
+            "text": texto,
+            "channelId": channel_id,
+            "schedulingType": "automatic",
+            "mode": "addToQueue",
+        }
+    }
 
-    response = requests.post(
-        "https://api.buffer.com",
-        headers=headers,
-        json=payload,
-        timeout=30
+    payload = {"query": query, "variables": variables}
+
+    r = post_with_retry(
+        BUFFER_GRAPHQL_URL,
+        headers=headers, payload=payload, timeout=30,
+        label="Buffer",
     )
-    response.raise_for_status()
-    data = response.json()
 
-    # Verificar errores GraphQL
+    if r.status_code >= 400:
+        print(f"  ❌ Buffer HTTP {r.status_code}: {r.text[:1000]}")
+        r.raise_for_status()
+
+    try:
+        data = r.json()
+    except ValueError:
+        raise Exception(f"Respuesta no-JSON de Buffer: {r.text[:500]}")
+
     if "errors" in data:
-        raise Exception(f"Error GraphQL: {data['errors']}")
+        raise Exception(f"Error GraphQL Buffer: {data['errors']}")
 
-    result = data.get("data", {}).get("createPost", {})
+    result = (data.get("data") or {}).get("createPost") or {}
     if result.get("message"):
         raise Exception(f"Error Buffer: {result['message']}")
 
     return result
 
-# ─── MAIN ─────────────────────────────────────────────────────────────────────
-
+# ─── MAIN ────────────────────────────────────────────────────────────────────
 def main():
     print(f"\n{'='*50}")
     print(f"  PROVINCIA POLÍTICA — Agente Social")
@@ -253,46 +285,54 @@ def main():
 
     try:
         notas = obtener_notas_para_publicar()
+    except Exception as e:
+        print(f"❌ Error consultando Notion: {e}")
+        sys.exit(1)
 
-        if not notas:
-            print("✅ No hay notas nuevas para publicar en redes.")
-            return
+    if not notas:
+        print("✅ No hay notas nuevas para publicar en redes.")
+        return
 
-        print(f"📋 {len(notas)} nota(s) para publicar en redes.\n")
+    print(f"📋 {len(notas)} nota(s) para publicar en redes.\n")
 
-        for page in notas:
+    publicadas = 0
+    errores = 0
+
+    for page in notas:
+        try:
             nota = extraer_datos_nota(page)
             if not nota["titulo"]:
+                print("  ⏭️ Nota sin título, salteada.\n")
                 continue
 
             print(f"📝 Generando posts para: {nota['titulo'][:60]}...")
-
             posts = generar_posts(nota)
 
             # Publicar en X
             if BUFFER_TWITTER_ID and posts.get("x"):
                 publicar_en_buffer(posts["x"], BUFFER_TWITTER_ID)
                 print(f"  ✅ X: {posts['x'][:80]}...")
+            else:
+                print("  ⏭️ X: sin BUFFER_X_CHANNEL_ID o sin texto generado")
 
             # Instagram deshabilitado temporalmente — requiere manejo de assets en GraphQL
-            print(f"  ⏭️  Instagram: pendiente de implementación de assets")
+            print("  ⏭️ Instagram: pendiente de implementación de assets")
 
             # Marcar como publicada en redes
             marcar_como_publicada_en_redes(nota["id"])
-            print(f"  ✅ Marcada como publicada en Notion\n")
+            print("  ✅ Marcada como publicada en Notion\n")
+            publicadas += 1
 
-        print("✨ Listo. Posts publicados en Buffer.")
+        except Exception as e:
+            errores += 1
+            print(f"  ❌ Falló esta nota: {e}\n")
+            continue
 
-    except requests.HTTPError as e:
-        print(f"❌ Error de API: {e}")
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"❌ Error parseando respuesta: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ Error inesperado: {e}")
-        sys.exit(1)
+    print(f"✨ Listo. {publicadas} publicada(s), {errores} con error.")
 
+    # Si todas fallaron, salir con código de error; si al menos una pasó, exit 0.
+    if publicadas == 0 and errores > 0:
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
