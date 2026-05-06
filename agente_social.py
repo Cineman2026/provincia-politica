@@ -1,8 +1,8 @@
 """
 AGENTE SOCIAL — PROVINCIA POLÍTICA v1.0
 =========================================
-Lee las notas destacadas publicadas en Notion y genera contenido para X e Instagram,
-publicándolo via Buffer.
+Lee las notas destacadas publicadas en Notion y genera contenido
+para X e Instagram, publicándolo via Buffer.
 
 Lógica:
 - Solo publica notas con Estado = Publicada y Destacada = true
@@ -187,7 +187,7 @@ Respondé SOLO con el JSON."""
 # ─── PUBLICACIÓN EN BUFFER ────────────────────────────────────────────────────
 
 def publicar_en_buffer(texto, channel_id, media_url=None):
-    """Envía un post a Buffer para publicación inmediata."""
+    """Envía un post a Buffer via API GraphQL."""
     if not BUFFER_TOKEN:
         raise ValueError("Falta BUFFER_TOKEN")
 
@@ -196,20 +196,48 @@ def publicar_en_buffer(texto, channel_id, media_url=None):
         "Content-Type": "application/json"
     }
 
-    payload = {
-        "profile_ids": [channel_id],
-        "text": texto,
-        "now": True
+    mutation = """
+    mutation CreatePost {
+      createPost(input: {
+        text: "%s",
+        channelId: "%s",
+        schedulingType: automatic,
+        mode: addToQueue
+      }) {
+        ... on PostActionSuccess {
+          post {
+            id
+            text
+            dueAt
+          }
+        }
+        ... on MutationError {
+          message
+        }
+      }
     }
+    """ % (texto.replace('"', '\"').replace('\n', '\\n'), channel_id)
+
+    payload = {"query": mutation}
 
     response = requests.post(
-        "https://api.bufferapp.com/1/updates/create.json",
+        "https://api.buffer.com",
         headers=headers,
         json=payload,
         timeout=30
     )
     response.raise_for_status()
-    return response.json()
+    data = response.json()
+
+    # Verificar errores GraphQL
+    if "errors" in data:
+        raise Exception(f"Error GraphQL: {data['errors']}")
+
+    result = data.get("data", {}).get("createPost", {})
+    if result.get("message"):
+        raise Exception(f"Error Buffer: {result['message']}")
+
+    return result
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 
