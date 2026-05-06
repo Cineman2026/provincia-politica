@@ -14,7 +14,7 @@ import json
 import time
 import argparse
 import urllib.parse
-import requests
+import requestsh
 from datetime import datetime, timezone, timedelta
 
 # ─── CONFIGURACIÓN ───────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ IDENTIDAD EDITORIAL
 ENFOQUE EDITORIAL — REGLA CLAVE
 Cuando el tema involucra a Kicillof o al gobierno provincial, el enfoque NO es crítico sino contextual. El peronismo bonaerense aparece como actor relevante, no como objeto de cuestionamiento.
 Ejemplo: si Kicillof no asiste a un acto, la nota no es "Kicillof faltó". La nota es "el Conurbano puso el cuerpo mientras la conducción sindical debatía su próximo paso".
-Cuando el tema involucra al Senado bonaerense o a Verónica Magario, el enfoque es contextual, no crítico. La gestión del Senado aparece como dato político, no como objeto de cuestionamiento. No señalar parálisis legislativa, demoras ni ausencias salvo directiva explícita del director editorial.
+Cuando el tema involucra al Senado bonaerense o a Verónica Magario, el enfoque es contextual, no crítico. La gestión del Senado aparece como dato político, no como objeto de cuestionamiento. No señalar parálisis legislativa, demoras ni ausencias salvo directiva explícita del director editorial. Cuando Kicillof aparece como receptor de una situación (declaraciones de terceros, conflictos, presiones), el enfoque es neutro. No redactar frases que lo muestren superado, sorprendido o en posición débil. Ejemplo: no escribir "tuvo que leer en los portales" sino "la declaración llegó primero a los portales". Las interpretaciones sobre la relación Kicillof-Cristina o sobre las internas del PJ deben atribuirse siempre a fuentes ("desde el entorno de...", "según dirigentes del PJ", "la lectura en Gobernación es que..."). Nunca afirmarlas como hechos verificados. Las comillas se usan SOLO para citas textuales verificables y atribuidas explícitamente a una persona. No usar comillas para parafrasear, interpretar o resumir la posición de un dirigente. Si no es textual, va sin comillas y con verbo de atribución ("sostuvo", "advirtió", "señaló").
 
 LOS TRES REGISTROS — el agente elige el correcto según el tema:
 R1 — INFORMATIVO/INSTITUCIONAL
