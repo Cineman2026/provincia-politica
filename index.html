@@ -2449,59 +2449,71 @@ function renderPortada() {
   let featured = destacadas[0] || null;
   const otrasDestacadas = destacadas.slice(1);
 
-  // FEATURED ARTICLE (big)
-  const bigArticle = document.createElement('article');
-  bigArticle.className = 'lead-big';
-  bigArticle.onclick = () => openNoticia(featured.id);
-  bigArticle.innerHTML = `
-    <div class="lead-img">
-      <img src="${escHtml(featured.imagen || getDefaultImg(featured.id))}" alt="" 
-           onerror="this.src='${getDefaultImg(featured.id)}'">
-    </div>
-    <div>
-      <div class="lead-cat">${escHtml(featured.categoria)}</div>
-      <h2 class="lead-title">${escHtml(featured.titulo)}</h2>
-      <p class="lead-dek">${escHtml(featured.copete)}</p>
-      <div class="lead-meta">
-        <span>${formatFecha(featured.fecha)} · ${timeAgo(featured.fecha)}</span>
-        <span class="d"></span>
-        <span>${escHtml(featured.plataforma || 'Redacción')}</span>
-      </div>
-    </div>
-  `;
-  leadGrid.appendChild(bigArticle);
-
-  // SECONDARY ARTICLES (2)
-  const secondaries = otrasDestacadas.slice(0, 2);
-  for (const sec of secondaries) {
-    const medArticle = document.createElement('article');
-    medArticle.className = 'lead-med';
-    medArticle.onclick = () => openNoticia(sec.id);
-    medArticle.innerHTML = `
+  // Si no hay ninguna nota destacada, mostrar 3 placeholders en el lead-grid
+  // y saltar al render del feed con las notas no destacadas.
+  if (!featured) {
+    for (let i = 0; i < 3; i++) {
+      const placeholder = document.createElement('div');
+      placeholder.className = i === 0 ? 'lead-big' : 'lead-med';
+      placeholder.style.cssText = 'min-height:280px;display:flex;align-items:center;justify-content:center;cursor:default;';
+      placeholder.innerHTML = '<div style="text-align:center;padding:2rem"><div style="font-size:2rem;margin-bottom:0.5rem;color:var(--gold);opacity:0.3">···</div><div style="font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-faint)">Próximamente</div></div>';
+      leadGrid.appendChild(placeholder);
+    }
+  } else {
+    // FEATURED ARTICLE (big)
+    const bigArticle = document.createElement('article');
+    bigArticle.className = 'lead-big';
+    bigArticle.onclick = () => openNoticia(featured.id);
+    bigArticle.innerHTML = `
       <div class="lead-img">
-        <img src="${escHtml(sec.imagen || getDefaultImg(sec.id))}" alt="" 
-             onerror="this.src='${getDefaultImg(sec.id)}'">
+        <img src="${escHtml(featured.imagen || getDefaultImg(featured.id))}" alt=""
+             onerror="this.src='${getDefaultImg(featured.id)}'">
       </div>
       <div>
-        <div class="lead-cat">${escHtml(sec.categoria)}</div>
-        <h3 class="lead-title">${escHtml(sec.titulo)}</h3>
+        <div class="lead-cat">${escHtml(featured.categoria)}</div>
+        <h2 class="lead-title">${escHtml(featured.titulo)}</h2>
+        <p class="lead-dek">${escHtml(featured.copete)}</p>
         <div class="lead-meta">
-          <span>${formatFecha(sec.fecha)} · ${timeAgo(sec.fecha)}</span>
+          <span>${formatFecha(featured.fecha)} · ${timeAgo(featured.fecha)}</span>
           <span class="d"></span>
-          <span>${escHtml(sec.plataforma || 'Redacción')}</span>
+          <span>${escHtml(featured.plataforma || 'Redacción')}</span>
         </div>
       </div>
     `;
-    leadGrid.appendChild(medArticle);
-  }
+    leadGrid.appendChild(bigArticle);
 
-  // Placeholders if needed - match lead-med style
-  for (let i = secondaries.length; i < 2; i++) {
-    const placeholder = document.createElement('div');
-    placeholder.className = 'lead-med';
-    placeholder.style.cssText = 'min-height:280px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;color:var(--ink-mute);font-size:0.9rem;cursor:default;';
-    placeholder.innerHTML = '<div style="text-align:center;padding:2rem"><div style="font-size:2rem;margin-bottom:0.5rem;color:var(--gold);opacity:0.3">···</div><div style="font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-faint)">Próximamente</div></div>';
-    leadGrid.appendChild(placeholder);
+    // SECONDARY ARTICLES (2)
+    const secondaries = otrasDestacadas.slice(0, 2);
+    for (const sec of secondaries) {
+      const medArticle = document.createElement('article');
+      medArticle.className = 'lead-med';
+      medArticle.onclick = () => openNoticia(sec.id);
+      medArticle.innerHTML = `
+        <div class="lead-img">
+          <img src="${escHtml(sec.imagen || getDefaultImg(sec.id))}" alt=""
+               onerror="this.src='${getDefaultImg(sec.id)}'">
+        </div>
+        <div>
+          <div class="lead-cat">${escHtml(sec.categoria)}</div>
+          <h3 class="lead-title">${escHtml(sec.titulo)}</h3>
+          <div class="lead-meta">
+            <span>${formatFecha(sec.fecha)} · ${timeAgo(sec.fecha)}</span>
+            <span class="d"></span>
+            <span>${escHtml(sec.plataforma || 'Redacción')}</span>
+          </div>
+        </div>
+      `;
+      leadGrid.appendChild(medArticle);
+    }
+
+    // Placeholders if needed - match lead-med style
+    for (let i = secondaries.length; i < 2; i++) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'lead-med';
+      placeholder.style.cssText = 'min-height:280px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;color:var(--ink-mute);font-size:0.9rem;cursor:default;';
+      placeholder.innerHTML = '<div style="text-align:center;padding:2rem"><div style="font-size:2rem;margin-bottom:0.5rem;color:var(--gold);opacity:0.3">···</div><div style="font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-faint)">Próximamente</div></div>';
+      leadGrid.appendChild(placeholder);
+    }
   }
 
   // FEED LIST (remaining articles)
