@@ -1,5 +1,5 @@
 """
-AGENTE REDACTOR — PROVINCIA POLÍTICA v1.1
+AGENTE REDACTOR — PROVINCIA POLÍTICA v1.3
 ==========================================
 Busca noticias políticas bonaerenses, las redacta con voz editorial
 de Provincia Política y las carga en Notion como borradores.
@@ -11,15 +11,24 @@ Uso con tema:  python agente_redactor.py --tema "Kicillof reunión intendentes"
 import os
 import sys
 import json
+import time
 import argparse
+import urllib.parse
 import requests
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 # ─── CONFIGURACIÓN ───────────────────────────────────────────────────────────
-
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-NOTION_TOKEN      = os.environ.get("NOTION_TOKEN")
-NOTION_DB_ID      = os.environ.get("NOTION_DB_ID", "352e199864dd80e1af24f0b661dbd896")
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+NOTION_DB_ID = os.environ.get("NOTION_DB_ID", "352e199864dd80e1af24f0b661dbd896")
+
+# Modelo Anthropic. Override con la env var ANTHROPIC_MODEL si querés cambiarlo.
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+
+# Si está en "1", se desactiva la tool web_search (útil si la cuenta no la tiene).
+DISABLE_WEB_SEARCH = os.environ.get("DISABLE_WEB_SEARCH", "0") == "1"
+
+TZ_ARG = timezone(timedelta(hours=-3))
 
 FUENTES = [
     "letrap.com.ar",
@@ -32,14 +41,13 @@ FUENTES = [
 ]
 
 TURNO_CONFIG = {
-    "manana": {"cantidad": 3, "etiqueta": "🌅 Mañana"},
+    "manana":   {"cantidad": 3, "etiqueta": "🌅 Mañana"},
     "mediodia": {"cantidad": 2, "etiqueta": "☀️ Mediodía"},
-    "tarde": {"cantidad": 2, "etiqueta": "🌆 Tarde"},
-    "manual": {"cantidad": 3, "etiqueta": "📝 Manual"},
+    "tarde":    {"cantidad": 2, "etiqueta": "🌆 Tarde"},
+    "manual":   {"cantidad": 3, "etiqueta": "📝 Manual"},
 }
 
 # ─── PROMPT DEL AGENTE ───────────────────────────────────────────────────────
-
 SYSTEM_PROMPT = """Sos el Agente Redactor de Provincia Política, una agencia de noticias política digital especializada en la Provincia de Buenos Aires.
 
 IDENTIDAD EDITORIAL
@@ -53,7 +61,6 @@ Ejemplo: si Kicillof no asiste a un acto, la nota no es "Kicillof faltó". La no
 Cuando el tema involucra al Senado bonaerense o a Verónica Magario, el enfoque es contextual, no crítico. La gestión del Senado aparece como dato político, no como objeto de cuestionamiento. No señalar parálisis legislativa, demoras ni ausencias salvo directiva explícita del director editorial.
 
 LOS TRES REGISTROS — el agente elige el correcto según el tema:
-
 R1 — INFORMATIVO/INSTITUCIONAL
 Cuándo: declaraciones, anuncios, datos económicos, conferencias de prensa.
 Tono: directo, riguroso, datos al frente, ironía mínima.
@@ -81,29 +88,29 @@ CATEGORÍAS VÁLIDAS: Ejecutivo / Legislatura / Internas PJ / Conurbano / Oposic
 DESTACADA: En cada tanda, marcá exactamente UNA nota como "destacada": true — la más importante o de mayor impacto político del día. El resto llevan "destacada": false.
 
 CRITERIOS DE IMAGEN — buscar siempre una URL de imagen para cada nota:
-
 Fuentes permitidas (en orden de preferencia):
-1. Prensa oficial del gobierno provincial: prensa.gba.gob.ar, redes de ministerios, AGLP (Agencia Legislativa La Plata)
-2. Redes sociales oficiales de funcionarios públicos (cuentas verificadas de Kicillof, intendentes, bloques legislativos)
-3. Portales de noticias digitales: letrap.com.ar, latecla.info, infocielo.com, infobae.com, pagina12.com.ar
+1. Prensa oficial del gobierno provincial: prensa.gba.gob.ar, redes de ministerios, AGLP
+2. Redes sociales oficiales de funcionarios públicos verificados
+3. Portales: letrap.com.ar, latecla.info, infocielo.com, infobae.com, pagina12.com.ar
 4. Télam y agencias de noticias
 
 Reglas de selección:
-- Usar solo fotos donde el protagonista es una figura pública en ejercicio de su función (acto oficial, conferencia, sesión, marcha)
+- Solo figuras públicas en ejercicio de su función (acto oficial, conferencia, sesión, marcha)
 - Preferir fotos recientes (2024-2026)
-- La URL debe terminar en .jpg, .jpeg, .png o .webp y cargar directamente en el navegador
-- No usar fotos de personas privadas aunque aparezcan en redes sociales
-- No usar fotos donde aparezcan menores
-- No usar fotos íntimas, médicas o de eventos privados
-- No usar URLs con espacios o caracteres especiales
-- No modificar ni omitir marcas de agua o créditos visibles en la imagen
+- La URL debe terminar en .jpg, .jpeg, .png o .webp y cargar directamente
+- No menores, no íntimas, no privadas
+- No URLs con espacios
 
-Si no encontrás una URL válida que cumpla todos los criterios, dejá el campo "imagen" como cadena vacía "".
+Si no encontrás una URL válida, dejá "imagen" como cadena vacía "".
 
-FORMATO DE SALIDA — siempre responder con este JSON exacto, sin texto adicional:
+FORMATO DE SALIDA — SIEMPRE responder con JSON puro, sin texto antes ni después, sin fences markdown.
+- Para una sola nota: un objeto JSON.
+- Para varias notas: un array JSON.
+
+Cada nota tiene EXACTAMENTE estas claves:
 {
   "registro": "R1|R2|R3",
-  "categoria": "categoría",
+  "categoria": "Ejecutivo|Legislatura|Internas PJ|Conurbano|Oposición|Economía|Última hora",
   "titulo": "título de la nota",
   "copete": "copete de 2-3 líneas",
   "cuerpo": "cuerpo completo de la nota",
@@ -111,12 +118,20 @@ FORMATO DE SALIDA — siempre responder con este JSON exacto, sin texto adiciona
   "destacada": true|false
 }"""
 
+# ─── UTILIDADES ──────────────────────────────────────────────────────────────
+def detectar_turno():
+    """Detecta el turno del día según la hora ARGENTINA (no UTC)."""
+    hora = datetime.now(TZ_ARG).hour
+    if 5 <= hora < 11:
+        return "manana"
+    elif 11 <= hora < 15:
+        return "mediodia"
+    else:
+        return "tarde"
 
-# ─── FUNCIONES ───────────────────────────────────────────────────────────────
 
 def validar_url_imagen(url):
-    """Valida que la URL de imagen sea segura para enviar a Notion.
-    Retorna la URL limpia o cadena vacia si no es valida."""
+    """Valida y normaliza la URL de imagen para Notion. Devuelve la URL o ''."""
     if not url or not isinstance(url, str):
         return ""
     url = url.strip()
@@ -132,24 +147,79 @@ def validar_url_imagen(url):
         return ""
     try:
         url.encode("ascii")
+        return url
     except UnicodeEncodeError:
-        return ""
-    return url
+        try:
+            partes = urllib.parse.urlsplit(url)
+            path_q = urllib.parse.quote(partes.path, safe="/%")
+            query = urllib.parse.quote(partes.query, safe="=&%")
+            return urllib.parse.urlunsplit((partes.scheme, partes.netloc, path_q, query, ""))
+        except Exception:
+            return ""
 
-def detectar_turno():
-    """Detecta el turno del día según la hora actual."""
-    hora = datetime.now().hour
-    if 5 <= hora < 11:
-        return "manana"
-    elif 11 <= hora < 15:
-        return "mediodia"
-    else:
-        return "tarde"
+
+def chunk_rich_text(texto, limite=1900):
+    """Divide texto en bloques rich_text de hasta limite chars (Notion exige <=2000)."""
+    if not texto:
+        return [{"text": {"content": ""}}]
+    bloques = []
+    while texto:
+        bloques.append({"text": {"content": texto[:limite]}})
+        texto = texto[limite:]
+    return bloques
+
+
+def post_with_retry(url, headers, payload, timeout=120, max_retries=3):
+    """POST con backoff exponencial para 429/5xx y errores de red."""
+    delay = 2
+    r = None
+    for intento in range(1, max_retries + 1):
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        except requests.RequestException as e:
+            if intento == max_retries:
+                raise
+            print(f"  ⏳ Error de red ({e}); reintento {intento}/{max_retries} en {delay}s")
+            time.sleep(delay)
+            delay *= 2
+            continue
+        if r.status_code in (429, 500, 502, 503, 504) and intento < max_retries:
+            print(f"  ⏳ HTTP {r.status_code}; reintento {intento}/{max_retries} en {delay}s")
+            try:
+                print(f"     body: {r.text[:500]}")
+            except Exception:
+                pass
+            time.sleep(delay)
+            delay *= 2
+            continue
+        return r
+    return r
+
+
+# ─── ANTHROPIC ───────────────────────────────────────────────────────────────
+def _extraer_texto(content_blocks):
+    return "".join(b.get("text", "") for b in content_blocks if b.get("type") == "text")
+
+
+def _limpiar_fences(texto):
+    """Elimina fences markdown y texto antes/después del primer bloque JSON."""
+    t = texto.strip()
+    if "```" in t:
+        partes = t.split("```")
+        for p in partes[1:]:
+            p = p.lstrip()
+            if p.startswith("json"):
+                p = p[4:].lstrip()
+            if p.startswith("{") or p.startswith("["):
+                return p.strip().rstrip("`").strip()
+    for i, ch in enumerate(t):
+        if ch in "{[":
+            return t[i:].strip()
+    return t
 
 
 def buscar_y_redactar(tema=None, turno="manual"):
     """Llama a la API de Claude para buscar noticias y redactar."""
-
     if not ANTHROPIC_API_KEY:
         raise ValueError("Falta la variable de entorno ANTHROPIC_API_KEY")
 
@@ -157,217 +227,229 @@ def buscar_y_redactar(tema=None, turno="manual"):
     cantidad = config["cantidad"]
 
     if tema:
-        user_prompt = f"""Redactá UNA nota sobre este tema específico para Provincia Política:
+        user_prompt = f"""Redactá UNA nota sobre este tema específico para Provincia Política.
 
 TEMA: {tema}
 
 Buscá información actualizada en: {', '.join(FUENTES)}
 
-Elegí el registro correcto (R1/R2/R3) según el tipo de noticia y redactá la nota completa.
-Marcá "destacada": true si es la nota más importante, false si no.
-Respondé SOLO con el JSON, sin texto adicional."""
+Elegí el registro correcto (R1/R2/R3) y redactá la nota completa.
+Marcá "destacada": true si es la más importante, false si no.
+Incluí "imagen" siguiendo los criterios del system prompt.
+
+Respondé SOLO con un objeto JSON válido (sin fences, sin texto adicional)."""
     else:
-        user_prompt = f"""Buscá las {cantidad} noticias más relevantes sobre política bonaerense de HOY ({datetime.now().strftime('%d/%m/%Y')}) en estas fuentes: {', '.join(FUENTES)}
+        user_prompt = f"""Buscá las {cantidad} noticias más relevantes sobre política bonaerense de HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) en estas fuentes: {', '.join(FUENTES)}
 
-Priorizá noticias sobre: Kicillof y el Ejecutivo provincial, Legislatura bonaerense, internas del PJ, municipios del Conurbano, oposición en territorio bonaerense.
+Priorizá: Kicillof y el Ejecutivo provincial, Legislatura bonaerense, internas del PJ, municipios del Conurbano, oposición.
 
-Para CADA noticia, redactá la nota completa eligiendo el registro correcto (R1/R2/R3).
+Para CADA noticia, redactá la nota completa eligiendo R1/R2/R3.
+Marcá "destacada": true SOLO en una nota (la más importante de la tanda). El resto false.
+Incluí "imagen" en cada nota siguiendo los criterios del system prompt.
 
-Marcá "destacada": true SOLO en la nota más importante de esta tanda. El resto llevan "destacada": false.
-
-Respondé con un array JSON de {cantidad} notas, cada una con el formato exacto:
-[
-  {{
-    "registro": "R1|R2|R3",
-    "categoria": "categoría",
-    "titulo": "título",
-    "copete": "copete",
-    "cuerpo": "cuerpo completo",
-    "destacada": true|false
-  }}
-]
-
-Respondé SOLO con el JSON, sin texto adicional."""
+Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves definidas (registro, categoria, titulo, copete, cuerpo, imagen, destacada). Sin fences, sin texto adicional."""
 
     headers = {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
     }
 
     payload = {
-        "model": "claude-opus-4-6",
-        "max_tokens": 4000,
-        "tools": [{"type": "web_search_20250305", "name": "web_search"}],
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": 4096,
         "system": SYSTEM_PROMPT,
-        "messages": [{"role": "user", "content": user_prompt}]
+        "messages": [{"role": "user", "content": user_prompt}],
     }
 
-    print(f"🔍 Buscando noticias ({turno})...")
-    response = requests.post(
-        "https://api.anthropic.com/v1/messages",
-        headers=headers,
-        json=payload,
-        timeout=120
-    )
-    response.raise_for_status()
-    data = response.json()
+    if not DISABLE_WEB_SEARCH:
+        payload["tools"] = [{
+            "type": "web_search_20250305",
+            "name": "web_search",
+            "max_uses": 5,
+        }]
 
-    # Extraer texto de la respuesta
-    texto = ""
-    for block in data.get("content", []):
-        if block.get("type") == "text":
-            texto += block.get("text", "")
+    print(f"🔍 Buscando noticias ({turno}) con modelo {ANTHROPIC_MODEL}"
+          f"{' [sin web_search]' if DISABLE_WEB_SEARCH else ''}...")
 
-    # Parsear JSON
-    texto = texto.strip()
-    if texto.startswith("```"):
-        texto = texto.split("```")[1]
-        if texto.startswith("json"):
-            texto = texto[4:]
-    texto = texto.strip()
+    r = post_with_retry("https://api.anthropic.com/v1/messages",
+                        headers=headers, payload=payload, timeout=180)
 
-    resultado = json.loads(texto)
+    if r.status_code >= 400:
+        print(f"❌ Anthropic respondió HTTP {r.status_code}")
+        try:
+            print(f"   body: {r.text[:2000]}")
+        except Exception:
+            pass
+        # Fallback: si web_search no está habilitada, reintentar sin tools
+        if not DISABLE_WEB_SEARCH and "tool" in r.text.lower():
+            print("   Reintentando sin web_search...")
+            payload.pop("tools", None)
+            r = post_with_retry("https://api.anthropic.com/v1/messages",
+                                headers=headers, payload=payload, timeout=180)
+            if r.status_code >= 400:
+                print(f"   body 2: {r.text[:2000]}")
+        r.raise_for_status()
 
-    # Normalizar a lista
+    data = r.json()
+    content = data.get("content", [])
+    tipos = [b.get("type") for b in content]
+
+    if "tool_use" in tipos and "text" not in tipos:
+        print(f"⚠️ Claude devolvió tool_use sin texto final. stop_reason={data.get('stop_reason')}")
+
+    texto = _extraer_texto(content).strip()
+    if not texto:
+        raise ValueError(f"Respuesta vacía de Anthropic. stop_reason={data.get('stop_reason')}, "
+                         f"tipos_bloques={tipos}")
+
+    texto = _limpiar_fences(texto)
+
+    try:
+        resultado = json.loads(texto)
+    except json.JSONDecodeError:
+        print(f"❌ JSON inválido. Primeros 1000 chars:\n{texto[:1000]}")
+        raise
+
     if isinstance(resultado, dict):
         resultado = [resultado]
-
     return resultado
 
 
-def limpiar_destacadas():
-    """Desmarca todas las noticias destacadas en Notion antes de cargar las nuevas."""
-    if not NOTION_TOKEN:
-        return
-
-    headers = {
+# ─── NOTION ──────────────────────────────────────────────────────────────────
+def _notion_headers():
+    return {
         "Authorization": f"Bearer {NOTION_TOKEN}",
         "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
-    # Buscar páginas con Destacada = true
-    payload = {
-        "filter": {"property": "Destacada", "checkbox": {"equals": True}}
-    }
-    response = requests.post(
-        f"https://api.notion.com/v1/databases/{NOTION_DB_ID}/query",
-        headers=headers,
-        json=payload,
-        timeout=30
-    )
-    if not response.ok:
-        print("⚠️  No se pudieron limpiar destacadas anteriores")
+
+def limpiar_destacadas():
+    """Desmarca todas las páginas con Destacada=true. Pagina y tolera errores."""
+    if not NOTION_TOKEN:
         return
-
-    pages = response.json().get("results", [])
-    for page in pages:
-        requests.patch(
-            f"https://api.notion.com/v1/pages/{page['id']}",
-            headers=headers,
-            json={"properties": {"Destacada": {"checkbox": False}}},
-            timeout=15
-        )
-    print(f"🧹 {len(pages)} destacada(s) anterior(es) limpiada(s)")
+    headers = _notion_headers()
+    cursor = None
+    total = 0
+    while True:
+        body = {
+            "filter": {"property": "Destacada", "checkbox": {"equals": True}},
+            "page_size": 100,
+        }
+        if cursor:
+            body["start_cursor"] = cursor
+        try:
+            r = requests.post(
+                f"https://api.notion.com/v1/databases/{NOTION_DB_ID}/query",
+                headers=headers, json=body, timeout=30)
+        except requests.RequestException as e:
+            print(f"⚠️ No se pudo consultar destacadas: {e}")
+            return
+        if not r.ok:
+            print(f"⚠️ No se pudieron limpiar destacadas (HTTP {r.status_code}): {r.text[:300]}")
+            return
+        data = r.json()
+        for page in data.get("results", []):
+            try:
+                requests.patch(
+                    f"https://api.notion.com/v1/pages/{page['id']}",
+                    headers=headers,
+                    json={"properties": {"Destacada": {"checkbox": False}}},
+                    timeout=15)
+                total += 1
+            except requests.RequestException as e:
+                print(f"   ⚠️ Error desmarcando {page.get('id')}: {e}")
+        if not data.get("has_more"):
+            break
+        cursor = data.get("next_cursor")
+    if total:
+        print(f"🧹 {total} destacada(s) anterior(es) limpiada(s)")
 
 
 def cargar_en_notion(nota, turno="manual"):
     """Carga una nota en Notion como borrador."""
-
     if not NOTION_TOKEN:
         raise ValueError("Falta la variable de entorno NOTION_TOKEN")
 
-    etiqueta = TURNO_CONFIG[turno]["etiqueta"]
-    titulo_completo = nota["titulo"]
+    titulo = (nota.get("titulo") or "Sin título").strip()
+    copete = nota.get("copete") or ""
+    cuerpo = nota.get("cuerpo") or ""
+    categoria = nota.get("categoria") or "Última hora"
+    destacada = bool(nota.get("destacada", False))
 
-    headers = {
-        "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
-    }
+    ahora = datetime.now(TZ_ARG).strftime("%Y-%m-%dT%H:%M:%S-03:00")
 
     payload = {
         "parent": {"database_id": NOTION_DB_ID},
         "properties": {
-            "Nombre": {
-                "title": [{"text": {"content": titulo_completo}}]
-            },
-            "Copete": {
-                "rich_text": [{"text": {"content": nota.get("copete", "")[:1999]}}]
-            },
-            "Cuerpo": {
-                "rich_text": [{"text": {"content": nota.get("cuerpo", "")[:2000]}}]
-            },
-            "Categoría": {
-                "select": {"name": nota.get("categoria", "Última hora")}
-            },
-            "Estado": {
-                "select": {"name": "Borrador"}
-            },
-            "Destacada": {
-                "checkbox": nota.get("destacada", False)
-            }
-        }
+            "Nombre":               {"title": [{"text": {"content": titulo[:1900]}}]},
+            "Copete":               {"rich_text": chunk_rich_text(copete)},
+            "Cuerpo":               {"rich_text": chunk_rich_text(cuerpo)},
+            "Categoría":            {"select": {"name": categoria}},
+            "Estado":               {"select": {"name": "Borrador"}},
+            "Destacada":            {"checkbox": destacada},
+            "Fecha de publicación": {"date": {"start": ahora}},
+        },
     }
 
-    # Agregar fecha de publicación (hora actual en Argentina)
-    from datetime import timezone, timedelta
-    tz_arg = timezone(timedelta(hours=-3))
-    ahora = datetime.now(tz_arg).strftime("%Y-%m-%dT%H:%M:%S-03:00")
-    payload["properties"]["Fecha de publicación"] = {"date": {"start": ahora}}
-
-    # Agregar imagen solo si la URL es valida
     imagen_url = validar_url_imagen(nota.get("imagen", ""))
     if imagen_url:
         payload["properties"]["Imagen"] = {"url": imagen_url}
 
-    response = requests.post(
-        "https://api.notion.com/v1/pages",
-        headers=headers,
-        json=payload,
-        timeout=30
-    )
-    response.raise_for_status()
-    result = response.json()
+    r = post_with_retry("https://api.notion.com/v1/pages",
+                        headers=_notion_headers(), payload=payload, timeout=30)
+    if r.status_code >= 400:
+        print(f"   ❌ Notion HTTP {r.status_code}: {r.text[:1000]}")
+        r.raise_for_status()
 
+    result = r.json()
     page_url = result.get("url", "")
-    destacada_str = "⭐" if nota.get("destacada") else "  "
-    print(f"  ✅ {destacada_str} [{nota['registro']}] {titulo_completo[:60]}...")
-    print(f"     Notion: {page_url}")
-
+    star = "⭐" if destacada else "  "
+    registro = nota.get("registro", "?")
+    print(f" ✅ {star} [{registro}] {titulo[:60]}")
+    if page_url:
+        print(f"     {page_url}")
     return result
 
 
+# ─── MAIN ────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="Agente Redactor — Provincia Política")
-    parser.add_argument("--tema", type=str, help="Tema específico para redactar", default=None)
-    parser.add_argument("--turno", type=str, choices=["manana", "mediodia", "tarde", "manual"],
-                        help="Turno del día", default=None)
+    parser.add_argument("--tema", type=str, default=None,
+                        help="Tema específico para redactar")
+    parser.add_argument("--turno", type=str, default=None,
+                        choices=["manana", "mediodia", "tarde", "manual"],
+                        help="Turno del día")
     args = parser.parse_args()
 
     turno = args.turno or ("manual" if args.tema else detectar_turno())
 
-    print(f"\n{'='*50}")
-    print(f"  PROVINCIA POLÍTICA — Agente Redactor")
-    print(f"  {datetime.now().strftime('%d/%m/%Y %H:%M')} — {TURNO_CONFIG[turno]['etiqueta']}")
-    print(f"{'='*50}\n")
+    print(f"\n{'='*52}")
+    print(f" PROVINCIA POLÍTICA — Agente Redactor")
+    print(f" {datetime.now(TZ_ARG).strftime('%d/%m/%Y %H:%M')} ARG — {TURNO_CONFIG[turno]['etiqueta']}")
+    print(f"{'='*52}\n")
+
+    errores = 0
+    cargadas = 0
 
     try:
-        # Limpiar destacadas anteriores antes de cargar las nuevas
         limpiar_destacadas()
-
         notas = buscar_y_redactar(tema=args.tema, turno=turno)
         print(f"📝 {len(notas)} nota(s) generada(s). Cargando en Notion...\n")
-
         for i, nota in enumerate(notas, 1):
             print(f"Nota {i}/{len(notas)}:")
-            cargar_en_notion(nota, turno=turno)
+            try:
+                cargar_en_notion(nota, turno=turno)
+                cargadas += 1
+            except Exception as e:
+                errores += 1
+                print(f"   ❌ Falló esta nota: {e}")
             print()
-
-        print(f"✨ Listo. Revisá los borradores en Notion y aprobá los que quieras publicar.")
+        print(f"✨ Listo. {cargadas} cargada(s), {errores} con error.")
         print(f"   https://www.notion.so/{NOTION_DB_ID}\n")
-
+        if cargadas == 0 and errores > 0:
+            sys.exit(1)
     except json.JSONDecodeError as e:
         print(f"❌ Error parseando respuesta del agente: {e}")
         sys.exit(1)
