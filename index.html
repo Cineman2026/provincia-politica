@@ -2575,7 +2575,8 @@ async function fetchFromNotion() {
     if (!response.ok) throw new Error('Notion API error');
     
     const data = await response.json();
-    
+    console.log(`Worker devolvió: ${data.results.length} noticias`);
+
     // Convert Notion pages to our format
     const noticias = data.results.map((page, idx) => {
       const props = page.properties;
@@ -2599,6 +2600,9 @@ async function fetchFromNotion() {
       };
     }).filter(n => n.titulo)
     .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    console.log(`Pasaron filtro de título: ${noticias.length} noticias`);
+    console.log('Títulos cargados:', noticias.map(n => n.titulo));
 
     if (noticias.length > 0) {
       // Save to localStorage and render
