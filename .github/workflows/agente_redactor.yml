@@ -1,5 +1,9 @@
 name: Agente Redactor — Provincia Política
 
+concurrency:
+  group: agente-redactor
+  cancel-in-progress: false
+
 on:
   schedule:
     # Turno mañana: 7am hora Argentina (10:00 UTC) - intento 1
