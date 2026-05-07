@@ -248,18 +248,22 @@ Marcá "destacada": true si es la más importante, false si no.
 Incluí "imagen" siguiendo los criterios del system prompt.
 Respondé SOLO con un objeto JSON válido (sin fences, sin texto adicional)."""
     else:
-        user_prompt = f"""Buscá las {cantidad} noticias más relevantes sobre política bonaerense de HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) en estas fuentes:
+        user_prompt = f"""Buscá las noticias más relevantes sobre política bonaerense de HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) en estas fuentes:
 {', '.join(FUENTES)}
 
-IMPORTANTE: Las {cantidad} notas DEBEN ser de categorías DISTINTAS para garantizar cobertura amplia. Distribuir entre: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora.
+OBJETIVO: generar {cantidad} notas. Si no hay suficiente material del día de hoy, podés usar material de los últimos 2-3 días que siga siendo relevante.
+
+IMPORTANTE: Si lográs varias notas, deben ser de categorías DISTINTAS. Distribuir entre: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora.
 No concentrar la cobertura en Ejecutivo — buscar activamente material en las otras categorías.
 
+REGLA CRÍTICA: Tu respuesta DEBE ser SIEMPRE un array JSON válido, sin texto antes ni después, sin fences markdown, sin explicaciones. Si no encontrás {cantidad} notas, devolvé las que sí pudiste hacer (mínimo 1). Nunca devuelvas texto plano explicando por qué no pudiste.
+
 Para CADA noticia, redactá la nota completa eligiendo R1/R2/R3.
-Marcá "destacada": true SOLO en una nota (la más importante de la tanda). El resto false.
+Marcá "destacada": true SOLO en una nota (la más importante). El resto false.
 Incluí "imagen" en cada nota siguiendo los criterios del system prompt.
 
-Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves definidas
-(registro, categoria, titulo, copete, cuerpo, imagen, destacada). Sin fences, sin texto adicional."""
+Respondé SOLO con un array JSON, con TODAS las claves definidas
+(registro, categoria, titulo, copete, cuerpo, imagen, destacada)."""
 
     headers = {
         "Content-Type": "application/json",
