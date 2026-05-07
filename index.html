@@ -2279,8 +2279,10 @@ updateDate();
 // ========================================
 
 function filterNoticias(noticias) {
-  if (currentFilter === 'Todo') return noticias.slice();
-  return noticias.filter(n => n.categoria === currentFilter);
+  if (currentFilter === 'archivo') return noticias.filter(n => n.esVieja);
+  const recientes = noticias.filter(n => !n.esVieja);
+  if (currentFilter === 'Todo') return recientes;
+  return recientes.filter(n => n.categoria === currentFilter);
 }
 
 function renderPortada() {
@@ -2598,6 +2600,12 @@ async function fetchFromNotion() {
         categoria: getSelect(props['Categoría'] || props['Categoria']),
         featured: getCheck(props['Destacada']),
         fecha: props['Fecha de publicación']?.date?.start || page.created_time,
+        esVieja: (function() {
+          const fechaNota = new Date(props['Fecha de publicación']?.date?.start || page.created_time);
+          const ahora = new Date();
+          const diasDiferencia = (ahora - fechaNota) / (1000 * 60 * 60 * 24);
+          return diasDiferencia > 10;
+        })(),
         plataforma: 'Redacción'
       };
     }).filter(n => n.titulo)
