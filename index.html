@@ -2382,8 +2382,9 @@ function renderPortada() {
   }
 
   // FEED LIST (remaining articles)
-  // Si no hay destacada, el lead-grid no consumio notas del feed -> mostrar todo.
-  const feedItems = featured ? rest.slice(2) : rest.slice(0);
+  // Mostrar todas las notas no destacadas en el feed (las secundarias del
+  // lead-grid salen de otrasDestacadas, no de rest).
+  const feedItems = rest.slice(0);
   const visible = feedItems.slice(0, visibleCount);
 
   if (visible.length === 0) {
