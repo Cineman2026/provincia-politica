@@ -500,7 +500,9 @@ def main():
         if ya_se_ejecuto_turno_hoy(turno):
             print(f"✅ Ya se ejecutó el turno '{turno}' hoy. Saliendo sin duplicar.\n")
             return
-        limpiar_destacadas()
+        # NOTA: Ya no limpiamos destacadas anteriores. Las destacadas se mantienen
+        # hasta que el director editorial las desmarque manualmente. El agente solo
+        # agrega una nueva destacada por tanda.
         notas = buscar_y_redactar(tema=args.tema, turno=turno)
         print(f"📝 {len(notas)} nota(s) generada(s). Cargando en Notion...\n")
         for i, nota in enumerate(notas, 1):
