@@ -30,7 +30,7 @@ BUFFER_TOKEN          = os.environ.get("BUFFER_TOKEN")
 BUFFER_INSTAGRAM_ID   = os.environ.get("BUFFER_INSTAGRAM_CHANNEL_ID")
 BUFFER_TWITTER_ID     = os.environ.get("BUFFER_X_CHANNEL_ID")
 
-BUFFER_GRAPHQL_URL    = "https://graph.buffer.com/"
+BUFFER_GRAPHQL_URL    = "https://api.buffer.com/"
 
 TZ_ARG = timezone(timedelta(hours=-3))
 
