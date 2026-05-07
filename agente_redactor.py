@@ -268,7 +268,7 @@ Respondé SOLO con un array JSON de {cantidad} notas, con TODAS las claves defin
     }
     payload = {
         "model": ANTHROPIC_MODEL,
-        "max_tokens": 4096,
+        "max_tokens": 8192,
         "system": SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": user_prompt}],
     }
