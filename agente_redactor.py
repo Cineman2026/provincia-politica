@@ -416,6 +416,52 @@ def cargar_en_notion(nota, turno="manual"):
     return result
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────
+def ya_se_ejecuto_turno_hoy(turno):
+    """Verifica si ya hay notas creadas hoy para evitar duplicados."""
+    if not NOTION_TOKEN or turno == "manual":
+        return False
+    hoy_arg = datetime.now(TZ_ARG).date()
+    # Definir ventana horaria del turno
+    rangos = {
+        "manana": (5, 11),
+        "mediodia": (11, 15),
+        "tarde": (15, 23),
+    }
+    if turno not in rangos:
+        return False
+    hora_inicio, hora_fin = rangos[turno]
+    try:
+        body = {
+            "filter": {
+                "and": [
+                    {"property": "Fecha de publicación", "date": {"on_or_after": hoy_arg.isoformat()}},
+                ]
+            },
+            "page_size": 100,
+        }
+        r = requests.post(
+            f"https://api.notion.com/v1/databases/{NOTION_DB_ID}/query",
+            headers=_notion_headers(), json=body, timeout=30)
+        if not r.ok:
+            print(f"⚠️ No se pudo verificar duplicados: {r.status_code}")
+            return False
+        data = r.json()
+        for page in data.get("results", []):
+            fecha_str = page.get("properties", {}).get("Fecha de publicación", {}).get("date", {}).get("start", "")
+            if not fecha_str:
+                continue
+            try:
+                fecha_pub = datetime.fromisoformat(fecha_str.replace("Z", "+00:00")).astimezone(TZ_ARG)
+            except ValueError:
+                continue
+            if fecha_pub.date() == hoy_arg and hora_inicio <= fecha_pub.hour < hora_fin:
+                return True
+        return False
+    except requests.RequestException as e:
+        print(f"⚠️ Error verificando duplicados: {e}")
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Agente Redactor — Provincia Política")
     parser.add_argument("--tema", type=str, default=None, help="Tema específico para redactar")
@@ -434,6 +480,10 @@ def main():
     errores = 0
     cargadas = 0
     try:
+        # Anti-duplicados: si ya corrió este turno hoy, salir sin hacer nada
+        if ya_se_ejecuto_turno_hoy(turno):
+            print(f"✅ Ya se ejecutó el turno '{turno}' hoy. Saliendo sin duplicar.\n")
+            return
         limpiar_destacadas()
         notas = buscar_y_redactar(tema=args.tema, turno=turno)
         print(f"📝 {len(notas)} nota(s) generada(s). Cargando en Notion...\n")
