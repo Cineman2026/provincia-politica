@@ -15,6 +15,7 @@ import time
 import argparse
 import urllib.parse
 import requests
+import re
 from datetime import datetime, timezone, timedelta
 
 # ─── CONFIGURACIÓN ───────────────────────────────────────────────────────────
@@ -39,6 +40,17 @@ FUENTES = [
     "gba.gob.ar/gobierno/noticias",
     "telam.com.ar",
 ]
+
+def limpiar_citas(texto):
+    """Elimina etiquetas <cite index="..."> y </cite> del texto."""
+    if not texto:
+        return texto
+    # Quitar etiquetas de apertura <cite index="...">
+    texto = re.sub(r'<cite\s+index="[^"]*">', '', texto)
+    # Quitar etiquetas de cierre </cite>
+    texto = re.sub(r'</cite>', '', texto)
+    return texto
+
 
 TURNO_CONFIG = {
     "manana":   {"cantidad": 5, "etiqueta": "🌅 Mañana"},
@@ -381,8 +393,8 @@ def cargar_en_notion(nota, turno="manual"):
         raise ValueError("Falta la variable de entorno NOTION_TOKEN")
 
     titulo = (nota.get("titulo") or "Sin título").strip()
-    copete = nota.get("copete") or ""
-    cuerpo = nota.get("cuerpo") or ""
+    copete = limpiar_citas(nota.get("copete") or "")
+    cuerpo = limpiar_citas(nota.get("cuerpo") or "")
     categoria = nota.get("categoria") or "Última hora"
     destacada = bool(nota.get("destacada", False))
     ahora = datetime.now(TZ_ARG).strftime("%Y-%m-%dT%H:%M:%S-03:00")
