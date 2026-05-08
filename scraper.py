@@ -71,8 +71,8 @@ def extraer_og_image(page):
         twitter = page.get_attribute('meta[name="twitter:image"]', 'content')
         if twitter and twitter.startswith('http'):
             return twitter
-        except Exception:
-            pass
+    except Exception:
+        pass
     return ""
 
 def scrape_portal(page, portal):
