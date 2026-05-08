@@ -240,6 +240,24 @@ def _limpiar_fences(texto):
             return t[i:].strip()
     return t
 
+def leer_scraper_output():
+    """Lee el output del scraper si existe. Devuelve lista de noticias o None."""
+    import os
+    try:
+        if not os.path.exists("scraper_output.json"):
+            return None
+        with open("scraper_output.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+        noticias = data.get("noticias", [])
+        if not noticias:
+            return None
+        print(f"📰 Scraper encontró {len(noticias)} noticias para procesar")
+        return noticias
+    except Exception as e:
+        print(f"⚠️  No se pudo leer scraper_output.json: {e}")
+        return None
+
+
 def buscar_y_redactar(tema=None, turno="manual"):
     """Llama a la API de Claude para buscar noticias y redactar."""
     if not ANTHROPIC_API_KEY:
@@ -260,7 +278,37 @@ Marcá "destacada": true si es la más importante, false si no.
 Incluí "imagen" siguiendo los criterios del system prompt.
 Respondé SOLO con un objeto JSON válido (sin fences, sin texto adicional)."""
     else:
-        user_prompt = f"""Buscá las noticias más relevantes sobre política bonaerense de HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) en estas fuentes:
+        # Intentar usar material del scraper si está disponible
+        material_scraper = leer_scraper_output()
+
+        if material_scraper:
+            material_texto = ""
+            for i, n in enumerate(material_scraper[:15], 1):
+                material_texto += f"""
+{i}. [{n['portal']}] {n['titulo']}
+   Copete: {n['copete'][:200] if n['copete'] else '(sin copete)'}
+   URL imagen: {n['imagen'] or '(sin imagen)'}
+   Fuente: {n['url']}
+"""
+            user_prompt = f"""Tenés el siguiente material periodístico extraído HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) de portales bonaerenses:
+
+{material_texto}
+
+Con ese material, redactá {cantidad} notas para Provincia Política.
+
+IMPORTANTE:
+- Elegí las {cantidad} noticias más relevantes del listado
+- Deben ser de categorías DISTINTAS: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora
+- Para la imagen, usá la URL imagen que viene con cada nota (si existe). Si no existe, dejá "imagen" como cadena vacía ""
+- Redactá cada nota con voz editorial propia, no copies el texto de las fuentes
+- Elegí el registro correcto (R1/R2/R3) para cada nota
+
+REGLA CRÍTICA: Respondé SOLO con un array JSON válido, sin texto antes ni después, sin fences markdown. Mínimo 1 nota, máximo {cantidad}.
+
+Cada nota con estas claves exactas:
+(registro, categoria, titulo, copete, cuerpo, imagen, destacada)"""
+        else:
+            user_prompt = f"""Buscá las noticias más relevantes sobre política bonaerense de HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) en estas fuentes:
 {', '.join(FUENTES)}
 
 OBJETIVO: generar {cantidad} notas. Si no hay suficiente material del día de hoy, podés usar material de los últimos 2-3 días que siga siendo relevante.

@@ -1,9 +1,7 @@
 name: Agente Redactor — Provincia Política
-
 concurrency:
   group: agente-redactor
   cancel-in-progress: false
-
 on:
   schedule:
     # Turno mañana: 7am hora Argentina (10:00 UTC) - intento 1
@@ -18,7 +16,6 @@ on:
     - cron: '5 21 * * *'
     # Turno tarde: 6pm hora Argentina (21:00 UTC) - intento 2 (retry si falló el 1)
     - cron: '20 21 * * *'
-  # Permite ejecutarlo manualmente desde GitHub Actions
   workflow_dispatch:
     inputs:
       tema:
@@ -35,12 +32,10 @@ on:
           - manana
           - mediodia
           - tarde
-
 jobs:
   redactar:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 30
     steps:
       - name: Checkout repositorio
         uses: actions/checkout@v4
@@ -51,7 +46,14 @@ jobs:
           python-version: '3.11'
 
       - name: Instalar dependencias
-        run: pip install requests
+        run: pip install requests playwright
+
+      - name: Instalar navegadores Playwright
+        run: python -m playwright install chromium --with-deps
+
+      - name: Correr Scraper de portales
+        run: python scraper.py
+        continue-on-error: true
 
       - name: Ejecutar Agente Redactor
         env:
