@@ -5,7 +5,7 @@ Lee las notas destacadas publicadas en Notion y genera contenido
 para X e Instagram, publicándolo via Buffer GraphQL API.
 
 Lógica:
-- Solo publica notas con Estado = Publicada y Destacada = true
+- Publica TODAS las notas con Estado = Publicada (independientemente de si están destacadas)
 - Solo publica notas que NO hayan sido publicadas en redes todavía
 - Marca cada nota como publicada en redes después de enviarla a Buffer
 - Corre cada hora via GitHub Actions
@@ -141,12 +141,11 @@ def _notion_headers():
 
 
 def obtener_notas_para_publicar():
-    """Obtiene notas con Estado=Publicada, Destacada=true y EnRedes=false."""
+    """Obtiene notas con Estado=Publicada y EnRedes=false (independientemente de si son destacadas)."""
     payload = {
         "filter": {
             "and": [
                 {"property": "Estado", "select": {"equals": "Publicada"}},
-                {"property": "Destacada", "checkbox": {"equals": True}},
                 {"property": "En Redes", "checkbox": {"equals": False}}
             ]
         },
