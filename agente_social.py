@@ -173,6 +173,16 @@ def marcar_como_publicada_en_redes(page_id):
     r.raise_for_status()
 
 
+def _get_select_seguro(prop):
+    """Extrae el nombre de un select de Notion manejando None correctamente."""
+    if not prop:
+        return ""
+    select = prop.get("select")
+    if not select:
+        return ""
+    return select.get("name", "")
+
+
 def extraer_datos_nota(page):
     """Extrae los campos relevantes de una página de Notion."""
     props = page.get("properties", {})
@@ -197,7 +207,7 @@ def extraer_datos_nota(page):
         "titulo": get_title(props.get("Nombre") or props.get("Name")),
         "copete": get_text(props.get("Copete")),
         "cuerpo": get_text(props.get("Cuerpo")),
-        "categoria": (props.get("Categoría") or props.get("Categoria") or {}).get("select", {}).get("name", ""),
+        "categoria": _get_select_seguro(props.get("Categoría") or props.get("Categoria")),
         "imagen": get_url(props.get("Imagen")),
     }
 
