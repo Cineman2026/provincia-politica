@@ -113,7 +113,7 @@ def scrape_portal(page, portal):
         print(f"     {len(links_relevantes)} artículos relevantes encontrados")
         
         # Visitar hasta 5 artículos por portal para extraer contenido completo
-        for item in links_relevantes[:5]:
+        for item in links_relevantes[:7]:
             try:
                 page.goto(item["url"], wait_until="domcontentloaded", timeout=20000)
                 page.wait_for_timeout(1500)
