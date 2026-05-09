@@ -60,9 +60,13 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DB_ID: ${{ secrets.NOTION_DB_ID }}
+          TURNO_INPUT: ${{ github.event.inputs.turno }}
+          TEMA_INPUT: ${{ github.event.inputs.tema }}
         run: |
-          if [ -n "${{ github.event.inputs.tema }}" ]; then
-            python agente_redactor.py --tema "${{ github.event.inputs.tema }}" --turno "${{ github.event.inputs.turno }}"
+          if [ -n "$TURNO_INPUT" ] && [ -n "$TEMA_INPUT" ]; then
+            python agente_redactor.py --turno "$TURNO_INPUT" --tema "$TEMA_INPUT"
+          elif [ -n "$TURNO_INPUT" ]; then
+            python agente_redactor.py --turno "$TURNO_INPUT"
           else
             python agente_redactor.py
           fi
