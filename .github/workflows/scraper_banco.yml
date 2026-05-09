@@ -1,0 +1,40 @@
+name: Scraper Banco — Provincia Política
+concurrency:
+  group: scraper-banco
+  cancel-in-progress: false
+on:
+  workflow_dispatch:
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install requests playwright
+
+      - name: Instalar navegadores Playwright
+        run: python -m playwright install chromium --with-deps
+
+      - name: Correr scraper de banco
+        run: python scraper_banco.py
+        continue-on-error: true
+
+      - name: Commit imágenes nuevas
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add assets/banco/ || true
+          git diff --staged --quiet || git commit -m "chore(banco): actualizar fotos $(date +'%d-%m-%Y %H:%M')"
+          git push || true
