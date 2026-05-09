@@ -156,7 +156,9 @@ def main():
         titulo_data = props.get("Nombre", {}).get("title", [])
         titulo = titulo_data[0].get("plain_text", "") if titulo_data else ""
         imagen = (props.get("Imagen") or {}).get("url", "") or ""
-        categoria = (props.get("Categoría") or props.get("Categoria") or {}).get("select", {}).get("name", "")
+        cat_prop = props.get("Categoría") or props.get("Categoria") or {}
+        cat_select = cat_prop.get("select") if cat_prop else None
+        categoria = cat_select.get("name", "") if cat_select else ""
         
         if not imagen:
             sin_imagen += 1
