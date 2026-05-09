@@ -447,6 +447,11 @@ def cargar_en_notion(nota, turno="manual"):
     destacada = bool(nota.get("destacada", False))
     ahora = datetime.now(TZ_ARG).strftime("%Y-%m-%dT%H:%M:%S-03:00")
 
+    # Validar registro: solo R1, R2 o R3
+    registro_val = nota.get("registro", "").strip().upper()
+    if registro_val not in ("R1", "R2", "R3"):
+        registro_val = "R1"  # default si el modelo no devolvió uno válido
+
     payload = {
         "parent": {"database_id": NOTION_DB_ID},
         "properties": {
@@ -456,6 +461,7 @@ def cargar_en_notion(nota, turno="manual"):
             "Categoría": {"select": {"name": categoria}},
             "Estado": {"select": {"name": "Borrador"}},
             "Destacada": {"checkbox": destacada},
+            "Registro": {"select": {"name": registro_val}},
             "Fecha de publicación": {"date": {"start": ahora}},
         },
     }
