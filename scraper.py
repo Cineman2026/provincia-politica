@@ -48,10 +48,15 @@ PORTALES = [
 ]
 
 PALABRAS_CLAVE = [
-    "kicillof", "provincia", "bonaerense", "pj", "legislatura",
-    "senado", "intendente", "conurbano", "kirchner", "milei",
+    # Política bonaerense general
+    "kicillof", "provincia", "bonaerense", "pj", "kirchner", "milei",
     "gobernador", "buenos aires", "peronismo", "elecciones", "2027",
-    "magario", "berni", "axel", "cristina"
+    "magario", "berni", "axel", "cristina", "conurbano", "intendente",
+    # Legislatura — términos específicos
+    "legislatura", "senado", "diputados", "senadores", "comisión",
+    "proyecto de ley", "sesión", "vicegobernadora", "cámara",
+    # Otros actores políticos
+    "bianco", "santilli", "bullrich", "máximo", "massa"
 ]
 
 def es_relevante(texto):
