@@ -1,0 +1,38 @@
+name: Cargar Banco Histórico
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cargar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install requests
+
+      - name: Cargar banco histórico
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_ID: ${{ secrets.NOTION_DB_ID }}
+        run: python cargar_banco_historico.py
+
+      - name: Commit imágenes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add assets/banco/ || true
+          git diff --staged --quiet || git commit -m "chore(banco): carga histórica de imágenes desde Notion"
+          git push || true
