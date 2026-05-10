@@ -240,6 +240,47 @@ def _limpiar_fences(texto):
             return t[i:].strip()
     return t
 
+def obtener_notas_recientes(dias=5, limit=30):
+    """Obtiene los títulos de las notas publicadas en los últimos N días para evitar repeticiones."""
+    if not NOTION_TOKEN:
+        return []
+    headers = _notion_headers()
+    desde = (datetime.now(TZ_ARG) - timedelta(days=dias)).date().isoformat()
+    body = {
+        "filter": {
+            "and": [
+                {"property": "Estado", "select": {"equals": "Publicada"}},
+                {"property": "Fecha de publicación", "date": {"on_or_after": desde}}
+            ]
+        },
+        "sorts": [{"property": "Fecha de publicación", "direction": "descending"}],
+        "page_size": limit,
+    }
+    try:
+        r = requests.post(
+            f"https://api.notion.com/v1/databases/{NOTION_DB_ID}/query",
+            headers=headers, json=body, timeout=30
+        )
+        if not r.ok:
+            print(f"⚠️  No se pudieron consultar notas recientes (HTTP {r.status_code})")
+            return []
+        data = r.json()
+        notas = []
+        for page in data.get("results", []):
+            props = page.get("properties", {})
+            titulo_data = props.get("Nombre", {}).get("title", [])
+            titulo = titulo_data[0].get("plain_text", "") if titulo_data else ""
+            copete_data = props.get("Copete", {}).get("rich_text", [])
+            copete = copete_data[0].get("plain_text", "")[:200] if copete_data else ""
+            fecha = props.get("Fecha de publicación", {}).get("date", {}).get("start", "")
+            if titulo:
+                notas.append({"titulo": titulo, "copete": copete, "fecha": fecha[:10]})
+        return notas
+    except Exception as e:
+        print(f"⚠️  Error consultando notas recientes: {e}")
+        return []
+
+
 def leer_scraper_output():
     """Lee el output del scraper si existe. Devuelve lista de noticias o None."""
     import os
@@ -290,15 +331,28 @@ Respondé SOLO con un objeto JSON válido (sin fences, sin texto adicional)."""
    URL imagen: {n['imagen'] or '(sin imagen)'}
    Fuente: {n['url']}
 """
+            # Traer notas ya publicadas para evitar repeticiones
+            notas_recientes = obtener_notas_recientes(dias=5, limit=30)
+            recientes_texto = ""
+            if notas_recientes:
+                print(f"📚 {len(notas_recientes)} nota(s) publicada(s) en los últimos 5 días para chequear repeticiones")
+                recientes_texto = "\n\nNOTAS QUE YA PUBLICAMOS EN LOS ÚLTIMOS DÍAS (NO repetir estos temas a menos que haya novedad real):\n"
+                for i, n in enumerate(notas_recientes, 1):
+                    recientes_texto += f"- [{n['fecha']}] {n['titulo']}\n"
+
             user_prompt = f"""Tenés el siguiente material periodístico extraído HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) de portales bonaerenses:
 
 {material_texto}
+{recientes_texto}
 
-Con ese material, redactá {cantidad} notas para Provincia Política.
+Con ese material, redactá hasta {cantidad} notas para Provincia Política.
 
-IMPORTANTE:
-- Elegí las {cantidad} noticias más relevantes del listado
-- Deben ser de categorías DISTINTAS: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora
+REGLA CLAVE — ANTI-REPETICIÓN:
+Si el material nuevo cubre temas que ya cubrimos en los últimos días (lista de arriba), descartá esas notas a MENOS QUE haya un dato nuevo, una declaración nueva, un giro narrativo o un actor nuevo. Si solo es "lo mismo de ayer con otras palabras", NO la generes.
+Es preferible devolver menos notas (mínimo 1) que generar contenido repetido.
+
+OTRAS REGLAS:
+- Las notas que sí generés deben ser de categorías DISTINTAS: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora
 - Para la imagen, usá la URL imagen que viene con cada nota (si existe). Si no existe, dejá "imagen" como cadena vacía ""
 - Redactá cada nota con voz editorial propia, no copies el texto de las fuentes
 - Elegí el registro correcto (R1/R2/R3) para cada nota
