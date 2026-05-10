@@ -160,18 +160,35 @@ def scrape_portal(page, portal):
                     except Exception:
                         pass
                 
-                # Imagen
-                imagen = extraer_og_image(page)
-                if not imagen:
-                    try:
-                        img = page.query_selector("article img, .featured-image img, .post-thumbnail img")
-                        if img:
-                            src = img.get_attribute("src") or ""
-                            if src.startswith("http"):
-                                imagen = src
-                    except Exception:
-                        pass
-                
+                # Imagen — La Tecla suele usar imágenes editadas con IA, las omitimos
+                imagen = ""
+                if nombre != "La Tecla":
+                    imagen = extraer_og_image(page)
+                    if not imagen:
+                        try:
+                            img = page.query_selector("article img, .featured-image img, .post-thumbnail img")
+                            if img:
+                                src = img.get_attribute("src") or ""
+                                if src.startswith("http"):
+                                    imagen = src
+                        except Exception:
+                            pass
+
+                    # Validar con HEAD request que la imagen sea accesible
+                    if imagen:
+                        try:
+                            import requests as _req
+                            head = _req.head(imagen, timeout=10, allow_redirects=True, headers={
+                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                            })
+                            content_type = head.headers.get("Content-Type", "").lower()
+                            if head.status_code != 200 or "image" not in content_type:
+                                print(f"     ⚠ Imagen no accesible ({head.status_code}, {content_type}): {imagen[:60]}")
+                                imagen = ""
+                        except Exception as e:
+                            print(f"     ⚠ HEAD request falló: {str(e)[:80]}")
+                            imagen = ""
+
                 if titulo and es_relevante(titulo):
                     noticias.append({
                         "portal": nombre,
