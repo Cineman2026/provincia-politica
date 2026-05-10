@@ -268,22 +268,26 @@ Esta sección la actualizamos cada vez que cerramos o abrimos algo importante.
 - ✅ Web mostrando notas con archivo histórico (10 días)
 - ✅ Cron-job.org como scheduler externo (6 trabajos diarios)
 - ✅ Banco histórico de imágenes cargado (23 fotos clasificadas)
-- ✅ Anti-duplicados en agente redactor
+- ✅ Anti-duplicados de turno en agente redactor (no corre el mismo turno dos veces el mismo día)
+- ✅ Anti-repetición de temas: el agente consulta las últimas 30 notas en Notion antes de generar. Si un tema ya se cubrió y no hay novedad real, lo descarta.
+- ✅ Flujo Solo Redes: propiedad `Solo Redes` en Notion + filtro en el Cloudflare Worker (oculta esas notas de la web, solo se publican en X).
+- ✅ Scraper con bloqueo de recursos pesados (imágenes, fuentes, ads, trackers) — mejora ~50% en velocidad de navegación.
+- ✅ Palabras clave ampliadas (~70 términos): actores políticos provinciales y nacionales, intendentes del Conurbano e interior, sindicalistas, líderes docentes, términos legislativos.
+- ✅ Buffer con 15 slots diarios configurados (1 por hora, 8 AM a 10 PM).
 - ✅ Limpieza automática de etiquetas `<cite>` del web_search
 - ✅ Filtro de destacadas funcionando
 - ✅ Propiedad "Registro" en Notion para trazabilidad de R1/R2/R3
 - ✅ Bug del workflow: ahora siempre pasa `--turno` al script
+- ✅ README.md subido al repo (commit a90e728).
 
 ### En curso / pendiente
 
 - [ ] Verificar que el archivo histórico funcione en producción (notas +10 días → botón Archivo). Revisar pasados unos días desde 7/5/2026.
 - [ ] Probar el panel de control editorial (`panel-provincia-politica.html`) — muestra estadísticas de Notion y permite disparar agentes desde el navegador.
-- [ ] Optimizar `scraper.py`:
-  - Bloquear recursos pesados (imágenes, fuentes, ads) en navegación general
+- [ ] Optimizar `scraper.py` (puntos restantes):
   - Esperas inteligentes (`wait_for_selector`) en vez de `wait_for_timeout` fijos
   - Selectores CSS específicos por portal (obtener con Claude en Chrome)
   - Validar URL de imagen con HEAD request antes de guardarla
-- [ ] Subir README.md actualizado al repo (está en `/mnt/user-data/outputs/README.md`).
 - [ ] Retomar Instagram — habilitar publicación automática con carruseles via API de Canva (plantillas en diseño DAHI5hGI7E0).
 - [ ] Buscador inteligente de imágenes: agente que analiza el título de la nota y busca imagen contextual en el banco propio antes de usar la del portal (mismas imágenes que los portales fuente generan apariencia de "secundario").
 
