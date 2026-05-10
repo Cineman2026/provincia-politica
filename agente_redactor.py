@@ -347,9 +347,16 @@ Respondé SOLO con un objeto JSON válido (sin fences, sin texto adicional)."""
 
 Con ese material, redactá hasta {cantidad} notas para Provincia Política.
 
-REGLA CLAVE — ANTI-REPETICIÓN:
-Si el material nuevo cubre temas que ya cubrimos en los últimos días (lista de arriba), descartá esas notas a MENOS QUE haya un dato nuevo, una declaración nueva, un giro narrativo o un actor nuevo. Si solo es "lo mismo de ayer con otras palabras", NO la generes.
-Es preferible devolver menos notas (mínimo 1) que generar contenido repetido.
+REGLA CLAVE — ANTI-REPETICIÓN Y POSTS DE ACTUALIZACIÓN:
+Si el material nuevo cubre temas que ya cubrimos en los últimos días (lista de arriba), tenés 3 opciones según el tipo de novedad:
+
+1. **NOTA COMPLETA** ("solo_redes": false) → SI hay un dato nuevo importante, declaración fuerte, giro narrativo o actor nuevo que amerite cobertura propia. Esta nota va a la web y a redes.
+
+2. **POST DE ACTUALIZACIÓN** ("solo_redes": true) → SI hay una actualización menor (un detalle nuevo, una reacción, una declaración secundaria) que no amerita nota larga pero sí vale postear en X para mantener continuidad. En este caso, redactá el "cuerpo" como un texto BREVE de máximo 250 caracteres (apto para tweet), y el "copete" como un titular corto. NO se mostrará en la web, solo en redes sociales.
+
+3. **DESCARTAR** → SI es "lo mismo de ayer con otras palabras" sin novedad real. No generes nada para ese tema.
+
+Es preferible devolver menos notas que generar contenido repetido.
 
 OTRAS REGLAS:
 - Las notas que sí generés deben ser de categorías DISTINTAS: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora
@@ -360,7 +367,9 @@ OTRAS REGLAS:
 REGLA CRÍTICA: Respondé SOLO con un array JSON válido, sin texto antes ni después, sin fences markdown. Mínimo 1 nota, máximo {cantidad}.
 
 Cada nota con estas claves exactas:
-(registro, categoria, titulo, copete, cuerpo, imagen, destacada)"""
+(registro, categoria, titulo, copete, cuerpo, imagen, destacada, solo_redes)
+
+Donde "solo_redes" es booleano: true para posts breves de actualización (solo van a X), false para notas completas que van a la web."""
         else:
             user_prompt = f"""Buscá las noticias más relevantes sobre política bonaerense de HOY ({datetime.now(TZ_ARG).strftime('%d/%m/%Y')}) en estas fuentes:
 {', '.join(FUENTES)}
@@ -499,12 +508,16 @@ def cargar_en_notion(nota, turno="manual"):
     cuerpo = limpiar_citas(nota.get("cuerpo") or "")
     categoria = nota.get("categoria") or "Última hora"
     destacada = bool(nota.get("destacada", False))
+    solo_redes = bool(nota.get("solo_redes", False))
     ahora = datetime.now(TZ_ARG).strftime("%Y-%m-%dT%H:%M:%S-03:00")
 
     # Validar registro: solo R1, R2 o R3
     registro_val = nota.get("registro", "").strip().upper()
     if registro_val not in ("R1", "R2", "R3"):
         registro_val = "R1"  # default si el modelo no devolvió uno válido
+
+    # Si es Solo Redes, marcarla automáticamente como Publicada (no requiere revisión manual)
+    estado_val = "Publicada" if solo_redes else "Borrador"
 
     payload = {
         "parent": {"database_id": NOTION_DB_ID},
@@ -513,8 +526,9 @@ def cargar_en_notion(nota, turno="manual"):
             "Copete": {"rich_text": chunk_rich_text(copete)},
             "Cuerpo": {"rich_text": chunk_rich_text(cuerpo)},
             "Categoría": {"select": {"name": categoria}},
-            "Estado": {"select": {"name": "Borrador"}},
+            "Estado": {"select": {"name": estado_val}},
             "Destacada": {"checkbox": destacada},
+            "Solo Redes": {"checkbox": solo_redes},
             "Registro": {"select": {"name": registro_val}},
             "Fecha de publicación": {"date": {"start": ahora}},
         },
