@@ -55,8 +55,18 @@ PALABRAS_CLAVE = [
     # Legislatura — términos específicos
     "legislatura", "senado", "diputados", "senadores", "comisión",
     "proyecto de ley", "sesión", "vicegobernadora", "cámara",
-    # Otros actores políticos
-    "bianco", "santilli", "bullrich", "máximo", "massa"
+    # Otros actores políticos nacionales/provinciales
+    "bianco", "santilli", "bullrich", "máximo", "massa",
+    # Intendentes del Conurbano (PJ)
+    "espinoza", "insaurralde", "achával", "cascallares", "ferraresi",
+    "mendoza", "mussi", "watson", "otermín", "nardini", "secco",
+    # Intendentes del interior PBA
+    "garro", "galli", "petrecca", "britos",
+    # Sindicatos y líderes gremiales
+    "sindicato", "gremio", "cgt", "cta", "moyano", "daer", "yasky",
+    "godoy", "maturano", "aguiar", "sasia", "acuña",
+    # Docentes
+    "ctera", "feb", "suteba", "alesso", "petrocini", "docente"
 ]
 
 def es_relevante(texto):
