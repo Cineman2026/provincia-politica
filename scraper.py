@@ -202,6 +202,35 @@ def main():
             viewport={"width": 1280, "height": 800}
         )
         page = context.new_page()
+
+        # ─── BLOQUEO DE RECURSOS PESADOS ──────────────────────────────────
+        # No bloqueamos imágenes porque las necesitamos para extraer og:image.
+        # Bloqueamos: fuentes web, hojas de estilo de terceros, ads y trackers.
+        BLOQUEAR_DOMINIOS = [
+            "googletagmanager.com", "google-analytics.com", "googlesyndication.com",
+            "doubleclick.net", "facebook.net", "facebook.com/tr",
+            "twitter.com/i/adsct", "ads-twitter.com",
+            "scorecardresearch.com", "criteo.com", "taboola.com",
+            "outbrain.com", "amazon-adsystem.com", "adsrvr.org",
+            "tiktok.com/i18n/pixel", "snapchat.com",
+        ]
+
+        def manejador_ruta(route):
+            request = route.request
+            url = request.url.lower()
+            tipo = request.resource_type
+            # Bloquear fuentes web (no afectan extracción de texto/imagen)
+            if tipo == "font":
+                return route.abort()
+            # Bloquear media (videos/audios) — no necesitamos
+            if tipo == "media":
+                return route.abort()
+            # Bloquear dominios de ads/trackers conocidos
+            if any(dominio in url for dominio in BLOQUEAR_DOMINIOS):
+                return route.abort()
+            return route.continue_()
+
+        page.route("**/*", manejador_ruta)
         
         for portal in PORTALES:
             noticias = scrape_portal(page, portal)
