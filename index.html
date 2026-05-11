@@ -2225,6 +2225,20 @@ function formatFecha(iso) {
   return `${dias[local.getDay()]} ${local.getDate()} de ${meses[local.getMonth()]}`;
 }
 
+function formatFechaCorta(iso) {
+  const d = new Date(iso);
+  const local = new Date(d.toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${local.getDate()} de ${meses[local.getMonth()]}`;
+}
+
+function metaFecha(iso) {
+  const d = new Date(iso);
+  const diff = (new Date() - d) / 1000;
+  if (diff >= 172800) return formatFechaCorta(iso);
+  return `${formatFecha(iso)} · ${timeAgo(iso)}`;
+}
+
 function timeAgo(iso) {
   const d = new Date(iso);
   const diff = (new Date() - d) / 1000;
@@ -2342,7 +2356,7 @@ function renderPortada() {
         <h2 class="lead-title">${escHtml(featured.titulo)}</h2>
         <p class="lead-dek">${escHtml(featured.copete)}</p>
         <div class="lead-meta">
-          <span>${formatFecha(featured.fecha)} · ${timeAgo(featured.fecha)}</span>
+          <span>${metaFecha(featured.fecha)}</span>
           <span class="d"></span>
           <span>${escHtml(featured.plataforma || 'Redacción')}</span>
         </div>
@@ -2366,7 +2380,7 @@ function renderPortada() {
           <h3 class="lead-title">${escHtml(sec.titulo)}</h3>
           <p class="lead-dek">${escHtml(sec.copete)}</p>
           <div class="lead-meta">
-            <span>${formatFecha(sec.fecha)} · ${timeAgo(sec.fecha)}</span>
+            <span>${metaFecha(sec.fecha)}</span>
             <span class="d"></span>
             <span>${escHtml(sec.plataforma || 'Redacción')}</span>
           </div>
@@ -2408,7 +2422,7 @@ function renderPortada() {
           <h3 class="feed-title">${escHtml(n.titulo)}</h3>
           <p class="feed-dek">${escHtml(n.copete)}</p>
           <div class="feed-meta">
-            <span>${formatFecha(n.fecha)} · ${timeAgo(n.fecha)}</span>
+            <span>${metaFecha(n.fecha)}</span>
             <span class="d"></span>
             <span>${escHtml(n.plataforma || 'Redacción')}</span>
           </div>
