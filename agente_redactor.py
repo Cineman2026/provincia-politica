@@ -347,16 +347,23 @@ Respondé SOLO con un objeto JSON válido (sin fences, sin texto adicional)."""
 
 Con ese material, redactá hasta {cantidad} notas para Provincia Política.
 
-REGLA CLAVE — ANTI-REPETICIÓN Y POSTS DE ACTUALIZACIÓN:
-Si el material nuevo cubre temas que ya cubrimos en los últimos días (lista de arriba), tenés 3 opciones según el tipo de novedad:
+REGLA CLAVE — ANTI-REPETICIÓN POR EVENTO (NO POR ÁNGULO):
 
-1. **NOTA COMPLETA** ("solo_redes": false) → SI hay un dato nuevo importante, declaración fuerte, giro narrativo o actor nuevo que amerite cobertura propia. Esta nota va a la web y a redes.
+CRITERIO PRINCIPAL: la comparación con notas anteriores es **por evento**, no por ángulo narrativo. Si el evento principal ya se cubrió, NO importa que el nuevo material lo cubra desde un ángulo distinto — eso NO amerita nota completa.
 
-2. **POST DE ACTUALIZACIÓN** ("solo_redes": true) → SI hay una actualización menor (un detalle nuevo, una reacción, una declaración secundaria) que no amerita nota larga pero sí vale postear en X para mantener continuidad. En este caso, redactá el "cuerpo" como un texto BREVE de máximo 250 caracteres (apto para tweet), y el "copete" como un titular corto. NO se mostrará en la web, solo en redes sociales.
+Ejemplos:
+- Si ya publicamos "Kicillof en Córdoba: primer acto presidencial" → un nuevo material sobre "Kicillof en Córdoba: salas llenas" es el MISMO EVENTO con otro ángulo. NO va como nota completa. Va como Solo Redes o se descarta.
+- Si ya publicamos "El Senado conformó 25 comisiones" → un nuevo material sobre "Magario armó las comisiones del Senado" es el MISMO EVENTO. Va como Solo Redes o se descarta.
 
-3. **DESCARTAR** → SI es "lo mismo de ayer con otras palabras" sin novedad real. No generes nada para ese tema.
+Para cada noticia del material nuevo, identificá el EVENTO principal (no el titular ni el ángulo) y compará contra los eventos ya cubiertos. 3 opciones:
 
-Es preferible devolver menos notas que generar contenido repetido.
+1. **NOTA COMPLETA** ("solo_redes": false) → SOLO si es un evento NUEVO no cubierto antes, O si hay un hecho concreto nuevo dentro del mismo tema (no un ángulo nuevo, sino una declaración importante, una decisión, un giro político real que cambie la lectura del evento).
+
+2. **POST DE ACTUALIZACIÓN** ("solo_redes": true) → si es el mismo evento ya cubierto pero hay un detalle nuevo, una reacción, una declaración secundaria que vale postear en X para mantener continuidad. Cuerpo BREVE de máximo 250 caracteres (apto para tweet), copete corto. NO va a la web.
+
+3. **DESCARTAR** → si es exactamente el mismo evento sin agregar nada nuevo (solo otro ángulo narrativo). No generes nada.
+
+Es preferible devolver menos notas que generar contenido repetido. Cuando dudes entre "nota completa" y "solo redes", elegí "solo redes" — es menos invasivo y mantiene la línea editorial limpia.
 
 OTRAS REGLAS:
 - Las notas que sí generés deben ser de categorías DISTINTAS: Ejecutivo, Legislatura, Internas PJ, Conurbano, Oposición, Economía, Última hora
