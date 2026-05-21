@@ -27,19 +27,28 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests Pillow boto3
 
-      - name: Descargar fuentes
+      - name: Descargar fuentes estáticas (no variable fonts)
         run: |
           mkdir -p fonts
           cd fonts
-          # Fraunces — variable font, descargamos los archivos estáticos necesarios
-          curl -sL "https://github.com/google/fonts/raw/main/ofl/fraunces/Fraunces%5BSOFT,WONK,opsz,soft,wght%5D.ttf" -o Fraunces-Bold.ttf
-          curl -sL "https://github.com/google/fonts/raw/main/ofl/fraunces/Fraunces%5BSOFT,WONK,opsz,soft,wght%5D.ttf" -o Fraunces-BoldItalic.ttf
-          curl -sL "https://github.com/google/fonts/raw/main/ofl/fraunces/Fraunces-Italic%5BSOFT,WONK,opsz,soft,wght%5D.ttf" -o Fraunces-Italic.ttf
-          # Inter — variable font
-          curl -sL "https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf" -o Inter-Regular.ttf
-          # JetBrains Mono — variable font
-          curl -sL "https://github.com/google/fonts/raw/main/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf" -o JetBrainsMono-Regular.ttf
+          # Fraunces — usar archivos estáticos individuales del subdirectorio /static/
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/fraunces/static/Fraunces_9pt-Bold.ttf" -o Fraunces-Bold.ttf
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/fraunces/static/Fraunces_9pt-BoldItalic.ttf" -o Fraunces-BoldItalic.ttf
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/fraunces/static/Fraunces_9pt-Italic.ttf" -o Fraunces-Italic.ttf
+          # Inter — estático
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/inter/static/Inter-Regular.ttf" -o Inter-Regular.ttf
+          # JetBrains Mono — estático
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/jetbrainsmono/static/JetBrainsMono-Regular.ttf" -o JetBrainsMono-Regular.ttf
           ls -la
+          # Verificar que todos los archivos pesen razonable (>100KB cada uno)
+          for f in *.ttf; do
+            size=$(stat -c%s "$f")
+            if [ "$size" -lt 50000 ]; then
+              echo "❌ $f es demasiado chico ($size bytes) — posible 404"
+              exit 1
+            fi
+            echo "✅ $f ($size bytes)"
+          done
 
       - name: Ejecutar Agente Social
         env:
