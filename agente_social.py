@@ -342,20 +342,14 @@ def publicar_en_buffer(texto, channel_id, image_bytes=None):
         "Content-Type": "application/json"
     }
 
+    # NOTA: temporalmente sin imagen — la API de Buffer rechazó "media" como campo
+    # de CreatePostInput. Pendiente investigar mutación correcta de upload de media.
     input_data = {
         "channelId": channel_id,
         "schedulingType": "automatic",
         "mode": "addToQueue",
         "text": texto
     }
-
-    # Si hay imagen, sumarla como media adjunta
-    if image_bytes:
-        b64 = base64.b64encode(image_bytes).decode("ascii")
-        input_data["media"] = [{
-            "type": "image",
-            "data": f"data:image/png;base64,{b64}"
-        }]
 
     payload = {
         "query": CREATE_POST_MUTATION,
@@ -412,29 +406,14 @@ def main():
             try:
                 posts = generar_posts(nota)
 
-                # Generar tarjeta visual
-                tarjeta_bytes = None
-                try:
-                    tarjeta_bytes = generar_tarjeta_bytes(
-                        titulo=nota['titulo'],
-                        bajada=nota['copete'][:160] if nota.get('copete') else "",
-                        categoria=nota.get('categoria', "")
-                    )
-                    print(f"  🎨 Tarjeta generada ({len(tarjeta_bytes)} bytes)")
-                except Exception as e:
-                    print(f"  ⚠️  No se pudo generar tarjeta: {e}")
-
-                # Publicar en X (con tarjeta si está disponible)
+                # Publicar en X (sin imagen — pendiente resolver upload a Buffer)
                 if BUFFER_TWITTER_ID and posts.get("x"):
-                    publicar_en_buffer(posts["x"], BUFFER_TWITTER_ID, image_bytes=tarjeta_bytes)
+                    publicar_en_buffer(posts["x"], BUFFER_TWITTER_ID)
                     print(f"  ✅ X: {posts['x'][:80]}...")
 
-                # Publicar en Instagram (siempre con imagen — es requisito de IG)
-                if BUFFER_INSTAGRAM_ID and posts.get("instagram") and tarjeta_bytes:
-                    publicar_en_buffer(posts["instagram"], BUFFER_INSTAGRAM_ID, image_bytes=tarjeta_bytes)
-                    print(f"  ✅ Instagram: {posts['instagram'][:80]}...")
-                elif not tarjeta_bytes:
-                    print(f"  ⏭️  Instagram: omitido (falló la generación de tarjeta)")
+                # Instagram pausado temporalmente — requiere imagen y todavía no
+                # tenemos resuelto el upload de media a Buffer GraphQL
+                print(f"  ⏭️  Instagram: en pausa (requiere upload de media a Buffer)")
 
                 # Marcar como publicada en redes
                 marcar_como_publicada_en_redes(nota["id"])
