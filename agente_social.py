@@ -427,7 +427,7 @@ def main():
                     try:
                         image_bytes = generar_tarjeta_bytes(
                             titulo=nota["titulo"],
-                            bajada=nota.get("bajada", ""),
+                            bajada=nota.get("copete", ""),
                             categoria=nota.get("categoria", ""),
                         )
                         image_url_ig = subir_imagen_a_r2(image_bytes)
