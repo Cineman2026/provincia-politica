@@ -1,83 +1,53 @@
-name: Agente Social
+name: Agente Social — Provincia Política
+
+concurrency:
+  group: agente-social
+  cancel-in-progress: false
 
 on:
-
   schedule:
-
-    - cron: '0 10 * * *'
-
-    - cron: '0 11 * * *'
-
-    - cron: '0 12 * * *'
-
-    - cron: '0 13 * * *'
-
-    - cron: '0 14 * * *'
-
-    - cron: '0 15 * * *'
-
-    - cron: '0 16 * * *'
-
-    - cron: '0 17 * * *'
-
-    - cron: '0 18 * * *'
-
-    - cron: '0 19 * * *'
-
-    - cron: '0 20 * * *'
-
-    - cron: '0 21 * * *'
-
-    - cron: '0 22 * * *'
-
-    - cron: '0 23 * * *'
-
-    - cron: '0 0 * * *'
-
-    - cron: '0 1 * * *'
-
+    # Cada hora entre 10:00 y 01:00 UTC (7am-22pm Argentina)
+    - cron: '0 10-23 * * *'
+    - cron: '0 0,1 * * *'
   workflow_dispatch:
 
 jobs:
-
-  publicar:
-
+  social:
     runs-on: ubuntu-latest
-
     timeout-minutes: 15
-
     steps:
-
-      - name: Checkout
-
+      - name: Checkout repositorio
         uses: actions/checkout@v4
 
-      - name: Setup Python
-
+      - name: Configurar Python
         uses: actions/setup-python@v5
-
         with:
-
           python-version: '3.11'
 
       - name: Instalar dependencias
+        run: pip install requests Pillow
 
-        run: pip install requests
+      - name: Descargar fuentes
+        run: |
+          mkdir -p fonts
+          cd fonts
+          # Fraunces — variable font, descargamos los archivos estáticos necesarios
+          curl -sL "https://github.com/google/fonts/raw/main/ofl/fraunces/Fraunces%5BSOFT,WONK,opsz,soft,wght%5D.ttf" -o Fraunces-Bold.ttf
+          curl -sL "https://github.com/google/fonts/raw/main/ofl/fraunces/Fraunces%5BSOFT,WONK,opsz,soft,wght%5D.ttf" -o Fraunces-BoldItalic.ttf
+          curl -sL "https://github.com/google/fonts/raw/main/ofl/fraunces/Fraunces-Italic%5BSOFT,WONK,opsz,soft,wght%5D.ttf" -o Fraunces-Italic.ttf
+          # Inter — variable font
+          curl -sL "https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf" -o Inter-Regular.ttf
+          # JetBrains Mono — variable font
+          curl -sL "https://github.com/google/fonts/raw/main/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf" -o JetBrainsMono-Regular.ttf
+          ls -la
 
-      - name: Correr Agente Social
-
+      - name: Ejecutar Agente Social
         env:
-
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-
           NOTION_DB_ID: ${{ secrets.NOTION_DB_ID }}
-
           BUFFER_TOKEN: ${{ secrets.BUFFER_TOKEN }}
-
-          BUFFER_INSTAGRAM_CHANNEL_ID: ${{ secrets.BUFFER_INSTAGRAM_CHANNEL_ID }}
-
           BUFFER_X_CHANNEL_ID: ${{ secrets.BUFFER_X_CHANNEL_ID }}
-
+          BUFFER_INSTAGRAM_CHANNEL_ID: ${{ secrets.BUFFER_INSTAGRAM_CHANNEL_ID }}
+          FONT_DIR: fonts
         run: python agente_social.py

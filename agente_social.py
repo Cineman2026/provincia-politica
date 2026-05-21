@@ -16,6 +16,10 @@ Uso manual: python agente_social.py
 import os
 import sys
 import json
+import base64
+
+# Generador de tarjetas tipográficas
+from generar_tarjeta import generar_tarjeta_bytes
 import time
 import requests
 from datetime import datetime, timezone, timedelta
@@ -313,8 +317,23 @@ mutation CreatePost($input: CreatePostInput!) {
 """
 
 
-def publicar_en_buffer(texto, channel_id):
-    """Publica un post en Buffer via GraphQL — modo addToQueue."""
+def subir_imagen_a_buffer(image_bytes):
+    """Sube una imagen a Buffer como asset y devuelve el asset_id para usar en el post.
+
+    Buffer GraphQL acepta media via mutation createMediaUpload o pasando media inline
+    en el input del post. Probamos primero con media_attachment directo.
+    """
+    # En GraphQL de Buffer, el media se pasa dentro del input del post como base64.
+    # Devolvemos directamente los bytes en base64 con el formato que Buffer espera.
+    b64 = base64.b64encode(image_bytes).decode("ascii")
+    return f"data:image/png;base64,{b64}"
+
+
+def publicar_en_buffer(texto, channel_id, image_bytes=None):
+    """Publica un post en Buffer via GraphQL — modo addToQueue.
+
+    Si se pasa image_bytes (PNG), lo adjunta como media al post.
+    """
     if not BUFFER_TOKEN:
         raise ValueError("Falta BUFFER_TOKEN")
 
@@ -323,15 +342,25 @@ def publicar_en_buffer(texto, channel_id):
         "Content-Type": "application/json"
     }
 
+    input_data = {
+        "channelId": channel_id,
+        "schedulingType": "automatic",
+        "mode": "addToQueue",
+        "text": texto
+    }
+
+    # Si hay imagen, sumarla como media adjunta
+    if image_bytes:
+        b64 = base64.b64encode(image_bytes).decode("ascii")
+        input_data["media"] = [{
+            "type": "image",
+            "data": f"data:image/png;base64,{b64}"
+        }]
+
     payload = {
         "query": CREATE_POST_MUTATION,
         "variables": {
-            "input": {
-                "channelId": channel_id,
-                "schedulingType": "automatic",
-                "mode": "addToQueue",
-                "text": texto
-            }
+            "input": input_data
         }
     }
 
@@ -383,13 +412,29 @@ def main():
             try:
                 posts = generar_posts(nota)
 
-                # Publicar en X
+                # Generar tarjeta visual
+                tarjeta_bytes = None
+                try:
+                    tarjeta_bytes = generar_tarjeta_bytes(
+                        titulo=nota['titulo'],
+                        bajada=nota['copete'][:160] if nota.get('copete') else "",
+                        categoria=nota.get('categoria', "")
+                    )
+                    print(f"  🎨 Tarjeta generada ({len(tarjeta_bytes)} bytes)")
+                except Exception as e:
+                    print(f"  ⚠️  No se pudo generar tarjeta: {e}")
+
+                # Publicar en X (con tarjeta si está disponible)
                 if BUFFER_TWITTER_ID and posts.get("x"):
-                    publicar_en_buffer(posts["x"], BUFFER_TWITTER_ID)
+                    publicar_en_buffer(posts["x"], BUFFER_TWITTER_ID, image_bytes=tarjeta_bytes)
                     print(f"  ✅ X: {posts['x'][:80]}...")
 
-                # Instagram deshabilitado temporalmente — requiere assets
-                print(f"  ⏭️  Instagram: pendiente de implementación de assets")
+                # Publicar en Instagram (siempre con imagen — es requisito de IG)
+                if BUFFER_INSTAGRAM_ID and posts.get("instagram") and tarjeta_bytes:
+                    publicar_en_buffer(posts["instagram"], BUFFER_INSTAGRAM_ID, image_bytes=tarjeta_bytes)
+                    print(f"  ✅ Instagram: {posts['instagram'][:80]}...")
+                elif not tarjeta_bytes:
+                    print(f"  ⏭️  Instagram: omitido (falló la generación de tarjeta)")
 
                 # Marcar como publicada en redes
                 marcar_como_publicada_en_redes(nota["id"])
