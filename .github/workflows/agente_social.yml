@@ -25,7 +25,7 @@ jobs:
           python-version: '3.11'
 
       - name: Instalar dependencias
-        run: pip install requests Pillow
+        run: pip install requests Pillow boto3
 
       - name: Descargar fuentes
         run: |
@@ -49,5 +49,10 @@ jobs:
           BUFFER_TOKEN: ${{ secrets.BUFFER_TOKEN }}
           BUFFER_X_CHANNEL_ID: ${{ secrets.BUFFER_X_CHANNEL_ID }}
           BUFFER_INSTAGRAM_CHANNEL_ID: ${{ secrets.BUFFER_INSTAGRAM_CHANNEL_ID }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          CF_R2_BUCKET_NAME: ${{ secrets.CF_R2_BUCKET_NAME }}
+          CF_R2_PUBLIC_URL: ${{ secrets.CF_R2_PUBLIC_URL }}
           FONT_DIR: fonts
         run: python agente_social.py
