@@ -360,7 +360,7 @@ def publicar_en_buffer(texto, channel_id, image_url=None):
         "text": texto
     }
     if image_url:
-        input_data["media"] = {"photo": image_url}
+        input_data["mediaUrls"] = [image_url]
 
     payload = {
         "query": CREATE_POST_MUTATION,
