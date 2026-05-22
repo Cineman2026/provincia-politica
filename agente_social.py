@@ -361,6 +361,9 @@ def publicar_en_buffer(texto, channel_id, image_url=None):
     }
     if image_url:
         input_data["assets"] = [{"image": {"url": image_url}}]
+        input_data["metadata"] = {
+            "instagram": {"type": "post", "shouldShareToFeed": True}
+        }
 
     if image_url:
         print(f"  DEBUG URL imagen: {image_url}")
