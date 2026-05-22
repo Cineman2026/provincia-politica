@@ -365,9 +365,6 @@ def publicar_en_buffer(texto, channel_id, image_url=None):
             "instagram": {"type": "post", "shouldShareToFeed": True}
         }
 
-    if image_url:
-        print(f"  DEBUG URL imagen: {image_url}")
-
     payload = {
         "query": CREATE_POST_MUTATION,
         "variables": {
@@ -378,7 +375,7 @@ def publicar_en_buffer(texto, channel_id, image_url=None):
     r = post_with_retry(BUFFER_GRAPHQL_URL, headers=headers, payload=payload, timeout=30)
 
     if r.status_code >= 400:
-        print(f"  ❌ Buffer HTTP {r.status_code}: {r.text[:3000]}")
+        print(f"  ❌ Buffer HTTP {r.status_code}: {r.text[:500]}")
     r.raise_for_status()
 
     data = r.json()
@@ -423,7 +420,7 @@ def main():
             try:
                 posts = generar_posts(nota)
 
-                # Publicar en X (sin imagen — pendiente resolver upload a Buffer)
+                # Publicar en X
                 if BUFFER_TWITTER_ID and posts.get("x"):
                     publicar_en_buffer(posts["x"], BUFFER_TWITTER_ID)
                     print(f"  ✅ X: {posts['x'][:80]}...")
