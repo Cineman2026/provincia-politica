@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Introspeccion de ImageAssetInput
+      - name: Introspeccion de PostInputMetaData y subtipos
         env:
           BUFFER_TOKEN: ${{ secrets.BUFFER_TOKEN }}
         run: |
@@ -18,10 +18,53 @@ jobs:
             exit 1
           fi
 
-          QUERY='{"query":"query { __type(name: \"ImageAssetInput\") { name kind description inputFields { name description type { name kind ofType { name kind ofType { name kind } } } } } }"}'
+          query_type() {
+            local NAME="$1"
+            local Q
+            Q=$(printf '{"query":"query { __type(name: \\"%s\\") { name kind description inputFields { name description type { name kind ofType { name kind ofType { name kind ofType { name kind } } } } } } }"}' "$NAME")
+            curl -sS -X POST https://api.buffer.com/ \
+              -H "Authorization: Bearer $BUFFER_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$Q"
+          }
 
-          echo "=== Introspeccion de ImageAssetInput ==="
-          curl -sS -X POST https://api.buffer.com/ \
-            -H "Authorization: Bearer $BUFFER_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$QUERY" | python3 -m json.tool
+          echo "=== 1) PostInputMetaData ==="
+          query_type "PostInputMetaData" > /tmp/resp.json
+          python3 -m json.tool /tmp/resp.json
+
+          # Script python que extrae nombres de INPUT_OBJECT referenciados
+          cat > /tmp/extract.py <<'PY'
+          import json, sys
+          data = json.load(sys.stdin)
+          fields = (data.get("data", {}).get("__type") or {}).get("inputFields") or []
+          found = []
+          def walk(node):
+              if not isinstance(node, dict):
+                  return
+              if node.get("kind") == "INPUT_OBJECT" and node.get("name"):
+                  if node["name"] not in found:
+                      found.append(node["name"])
+              walk(node.get("ofType"))
+          for f in fields:
+              walk(f.get("type"))
+          print("\n".join(found))
+          PY
+
+          echo ""
+          echo "=== 2) Subtipos INPUT_OBJECT referenciados ==="
+          SUBTYPES=$(python3 /tmp/extract.py < /tmp/resp.json)
+
+          if [ -z "$SUBTYPES" ]; then
+            echo "(no se encontraron INPUT_OBJECT referenciados desde PostInputMetaData)"
+            exit 0
+          fi
+
+          echo "Subtipos a introspeccionar:"
+          echo "$SUBTYPES"
+
+          while IFS= read -r T; do
+            [ -z "$T" ] && continue
+            echo ""
+            echo "=== Subtipo: $T ==="
+            query_type "$T" | python3 -m json.tool
+          done <<< "$SUBTYPES"
