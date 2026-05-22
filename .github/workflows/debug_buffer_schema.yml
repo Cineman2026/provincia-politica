@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Introspeccion de AssetInput
+      - name: Introspeccion de ImageAssetInput
         env:
           BUFFER_TOKEN: ${{ secrets.BUFFER_TOKEN }}
         run: |
@@ -18,9 +18,9 @@ jobs:
             exit 1
           fi
 
-          QUERY='{"query":"query { __type(name: \"AssetInput\") { name kind description inputFields { name description type { name kind ofType { name kind ofType { name kind } } } } } }"}'
+          QUERY='{"query":"query { __type(name: \"ImageAssetInput\") { name kind description inputFields { name description type { name kind ofType { name kind ofType { name kind } } } } } }"}'
 
-          echo "=== Introspeccion de AssetInput ==="
+          echo "=== Introspeccion de ImageAssetInput ==="
           curl -sS -X POST https://api.buffer.com/ \
             -H "Authorization: Bearer $BUFFER_TOKEN" \
             -H "Content-Type: application/json" \
