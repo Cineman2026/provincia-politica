@@ -360,7 +360,7 @@ def publicar_en_buffer(texto, channel_id, image_url=None):
         "text": texto
     }
     if image_url:
-        input_data["mediaUrls"] = [image_url]
+        input_data["imageUrl"] = image_url
 
     if image_url:
         print(f"  DEBUG URL imagen: {image_url}")
