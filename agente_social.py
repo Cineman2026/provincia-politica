@@ -372,7 +372,7 @@ def publicar_en_buffer(texto, channel_id, image_url=None):
     r = post_with_retry(BUFFER_GRAPHQL_URL, headers=headers, payload=payload, timeout=30)
 
     if r.status_code >= 400:
-        print(f"  ❌ Buffer HTTP {r.status_code}: {r.text[:500]}")
+        print(f"  ❌ Buffer HTTP {r.status_code}: {r.text[:2000]}")
     r.raise_for_status()
 
     data = r.json()
