@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Introspeccion de CreatePostInput
+      - name: Introspeccion de tipos de Buffer
         env:
           BUFFER_TOKEN: ${{ secrets.BUFFER_TOKEN }}
         run: |
@@ -18,17 +18,24 @@ jobs:
             exit 1
           fi
 
-          QUERY='{"query":"query { __type(name: \"CreatePostInput\") { name kind description inputFields { name description type { name kind ofType { name kind ofType { name kind } } } } } }"}'
+          introspect_type() {
+            local TYPE_NAME="$1"
+            echo ""
+            echo "========================================================"
+            echo "  Tipo: $TYPE_NAME"
+            echo "========================================================"
+            local QUERY
+            QUERY=$(printf '{"query":"query { __type(name: \\"%s\\") { name kind description inputFields { name description type { name kind ofType { name kind ofType { name kind } } } } } }"}' "$TYPE_NAME")
+            curl -sS -X POST https://api.buffer.com/ \
+              -H "Authorization: Bearer $BUFFER_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$QUERY" | python3 -m json.tool
+          }
 
-          echo "=== Enviando introspeccion a https://api.buffer.com/ ==="
-          RESPONSE=$(curl -sS -X POST https://api.buffer.com/ \
-            -H "Authorization: Bearer $BUFFER_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$QUERY")
+          # CreatePostInput primero (sanity check del run anterior)
+          introspect_type "CreatePostInput"
 
-          echo "=== Respuesta cruda ==="
-          echo "$RESPONSE"
-
-          echo ""
-          echo "=== Respuesta formateada ==="
-          echo "$RESPONSE" | python3 -m json.tool
+          # Candidatos para el tipo de asset
+          for T in PostAssetInput AssetInput CreateAssetInput PostAsset; do
+            introspect_type "$T"
+          done
