@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Introspeccion en cascada del tipo de assets
+      - name: Introspeccion de AssetInput
         env:
           BUFFER_TOKEN: ${{ secrets.BUFFER_TOKEN }}
         run: |
@@ -18,52 +18,10 @@ jobs:
             exit 1
           fi
 
-          QUERY1='{"query":"query { __type(name: \"CreatePostInput\") { inputFields { name type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } }"}'
+          QUERY='{"query":"query { __type(name: \"AssetInput\") { name kind description inputFields { name description type { name kind ofType { name kind ofType { name kind } } } } } }"}'
 
-          echo "=== Paso 1: introspeccion profunda de CreatePostInput ==="
-          RESP1=$(curl -sS -X POST https://api.buffer.com/ \
-            -H "Authorization: Bearer $BUFFER_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$QUERY1")
-
-          echo "$RESP1" | python3 -m json.tool
-
-          echo ""
-          echo "=== Paso 2: resolver el tipo final del campo assets ==="
-          ASSET_TYPE=$(echo "$RESP1" | python3 - <<'PY'
-          import json, sys
-          data = json.load(sys.stdin)
-          fields = data.get("data", {}).get("__type", {}).get("inputFields") or []
-          target = next((f for f in fields if f["name"] == "assets"), None)
-          if not target:
-              print("__NO_ASSETS_FIELD__")
-              sys.exit(0)
-          node = target["type"]
-          # caminar ofType hasta encontrar uno con name no nulo
-          while isinstance(node, dict):
-              if node.get("name"):
-                  print(node["name"])
-                  sys.exit(0)
-              node = node.get("ofType")
-          print("__UNRESOLVED__")
-          PY
-          )
-
-          echo "Tipo resuelto: $ASSET_TYPE"
-
-          if [ "$ASSET_TYPE" = "__NO_ASSETS_FIELD__" ]; then
-            echo "::error::No se encontro el campo assets en CreatePostInput"
-            exit 1
-          fi
-          if [ "$ASSET_TYPE" = "__UNRESOLVED__" ]; then
-            echo "::error::No se pudo resolver el tipo de assets (cadena de ofType mas profunda que la query)"
-            exit 1
-          fi
-
-          echo ""
-          echo "=== Paso 3: inputFields de $ASSET_TYPE ==="
-          QUERY2=$(printf '{"query":"query { __type(name: \\"%s\\") { name kind description inputFields { name description type { kind name ofType { kind name ofType { kind name } } } } } }"}' "$ASSET_TYPE")
+          echo "=== Introspeccion de AssetInput ==="
           curl -sS -X POST https://api.buffer.com/ \
             -H "Authorization: Bearer $BUFFER_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "$QUERY2" | python3 -m json.tool
+            -d "$QUERY" | python3 -m json.tool
