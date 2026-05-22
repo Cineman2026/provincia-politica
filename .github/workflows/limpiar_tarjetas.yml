@@ -1,0 +1,35 @@
+name: Limpiar Tarjetas R2 — Provincia Política
+
+concurrency:
+  group: limpiar-tarjetas
+  cancel-in-progress: false
+
+on:
+  schedule:
+    # 1 vez por día a las 06:00 UTC (3am Argentina, horario de bajo tráfico)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  limpiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install boto3
+
+      - name: Ejecutar limpieza de tarjetas
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          CF_R2_BUCKET_NAME: ${{ secrets.CF_R2_BUCKET_NAME }}
+        run: python limpiar_tarjetas.py
