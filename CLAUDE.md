@@ -290,6 +290,7 @@ Esta sección la actualizamos cada vez que cerramos o abrimos algo importante.
   - Validar URL de imagen con HEAD request antes de guardarla
 - [ ] Retomar Instagram — habilitar publicación automática con carruseles via API de Canva (plantillas en diseño DAHI5hGI7E0).
 - [ ] Buscador inteligente de imágenes: agente que analiza el título de la nota y busca imagen contextual en el banco propio antes de usar la del portal (mismas imágenes que los portales fuente generan apariencia de "secundario").
+- [ ] **Agente editorial** (pendiente, prioridad alta cuando se retome): flujo separado del redactor para producir 1 editorial/día de 600-1000 palabras. Input = audio corto de Santiago con tesis + señales (no scraping); el agente hace el trabajo pesado de escritura (estructura argumentativa, gancho, contraargumento, cierre). Requiere prompt distinto al del redactor, ciclo de iteración largo (~2 meses de feedback marcando "suena a IA", "lugar común", etc.) antes de publicar sin retoques. Reutilizar memoria explícita de últimas N columnas estilo el anti-repetición del redactor, para evitar abrir igual / repetir metáforas.
 
 ### Plan de evolución del Agente Social en X
 
