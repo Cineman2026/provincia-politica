@@ -291,6 +291,10 @@ Esta sección la actualizamos cada vez que cerramos o abrimos algo importante.
 - [ ] Retomar Instagram — habilitar publicación automática con carruseles via API de Canva (plantillas en diseño DAHI5hGI7E0).
 - [ ] Buscador inteligente de imágenes: agente que analiza el título de la nota y busca imagen contextual en el banco propio antes de usar la del portal (mismas imágenes que los portales fuente generan apariencia de "secundario").
 - [ ] **Agente editorial** (pendiente, prioridad alta cuando se retome): flujo separado del redactor para producir 1 editorial/día de 600-1000 palabras. Input = audio corto de Santiago con tesis + señales (no scraping); el agente hace el trabajo pesado de escritura (estructura argumentativa, gancho, contraargumento, cierre). Requiere prompt distinto al del redactor, ciclo de iteración largo (~2 meses de feedback marcando "suena a IA", "lugar común", etc.) antes de publicar sin retoques. Reutilizar memoria explícita de últimas N columnas estilo el anti-repetición del redactor, para evitar abrir igual / repetir metáforas.
+- [ ] **Mejorar calidad del agente social** (pendiente, esfuerzo bajo / impacto alto): tres palancas a implementar en orden:
+  1. Anti-repetición a nivel social: pasar al agente las últimas 30 publicaciones de @provinciapolitica como contexto, con instrucción de no abrir igual, no repetir formulación ni metáfora dentro de la semana. Misma lógica que el anti-repetición ya existente en el redactor, aplicada al social.
+  2. Few-shot con marcado humano: propiedad nueva en Notion "Calidad social" (Bueno / Aceptable / Malo). Santiago marca 10 min cada tanto. El agente lee los Buenos como ejemplos positivos y los Malos como anti-ejemplos en el system prompt. Esto reemplaza la necesidad de tunear el prompt manualmente — el feedback queda registrado en Notion.
+  3. (Opcional, más adelante) Señal de engagement de X (likes, RTs) cargada de vuelta a Notion como dato complementario al criterio editorial. Cuidado: el engagement no es buena guía editorial pura (lo más viral suele ser lo más vulgar).
 
 ### Plan de evolución del Agente Social en X
 
